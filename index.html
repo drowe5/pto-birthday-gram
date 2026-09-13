@@ -290,10 +290,10 @@
       </div>
       <div class="grams" id="grams"></div>
       <p class="hint">Click a name to see that card, or its tick to leave that
-        one out. Hovering a row offers &#10514; and &#10515;: exclude
-        everything above it, or include it and everything below &mdash; which
-        is how a batch gets printed up to a date and carried on from there
-        next time.</p>
+        one out. Hovering a row offers &#10514; and &#10515;, which trim one
+        end of the batch and keep the row you clicked: everything above it, or
+        everything below it. Use one to start from where you left off, the
+        other to stop at a date.</p>
     </section>
   </div>
 
@@ -1694,16 +1694,16 @@
     renderGrams(); updateButtons(); persist();
   }
 
-  /* The working pattern is a rolling batch: everything up to last week is
-     done, so exclude above the boundary and include from it downwards. Both
-     act on the list as currently sorted, which is why they are only offered
-     from a row. */
+  /* Trimming one end of the batch. Both leave the clicked row itself in, so
+     it reads the same way whichever end you work from: this one is the first
+     I still owe, or this one is the last I am printing today. They act on the
+     list as currently sorted, which is why they are only offered from a row. */
   function excludeAbove(at) {
     records().forEach(function (g, i) { if (i < at) { S.skip[g.key] = true; } });
     renderGrams(); updateButtons(); persist();
   }
-  function includeBelow(at) {
-    records().forEach(function (g, i) { if (i >= at) { delete S.skip[g.key]; } });
+  function excludeBelow(at) {
+    records().forEach(function (g, i) { if (i > at) { S.skip[g.key] = true; } });
     renderGrams(); updateButtons(); persist();
   }
 
@@ -1749,8 +1749,8 @@
 
       var acts = document.createElement('span');
       acts.className = 'acts';
-      acts.appendChild(actionButton('\u2912', 'Exclude everything above this one', function () { excludeAbove(i); }));
-      acts.appendChild(actionButton('\u2913', 'Include this one and everything below it', function () { includeBelow(i); }));
+      acts.appendChild(actionButton('\u2912', 'Exclude everything above this one, keeping this one', function () { excludeAbove(i); }));
+      acts.appendChild(actionButton('\u2913', 'Exclude everything below this one, keeping this one', function () { excludeBelow(i); }));
 
       b.appendChild(n); b.appendChild(who); b.appendChild(when); b.appendChild(acts);
       b.addEventListener('click', function () { S.idx = i; refreshPreview(); });

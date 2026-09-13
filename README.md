@@ -55,10 +55,11 @@ Grams can be left out of a batch without being deleted:
 
 - **The tick** beside a name drops that one, or puts it back.
 - **All** and **None** at the top of the list do the whole batch.
-- **Hovering a row** offers two more, which is how a rolling batch works:
-  &#10514; excludes everything above that row, and &#10515; includes that row
-  and everything below it. Click both on the first gram you have not done yet
-  and the batch is exactly the ones still to print.
+- **Hovering a row** offers two more, which trim one end of the batch and
+  always keep the row you clicked: &#10514; excludes everything above it,
+  &#10515; excludes everything below it. Use the first to start from where you
+  left off, the second to stop at a date. Both on the same row leaves that one
+  gram on its own.
 
 An exclusion belongs to a *gram*, not to a position, so re-sorting the list or
 changing the filter never moves it onto somebody else. A birthday the page
