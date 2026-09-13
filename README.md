@@ -46,6 +46,29 @@ These roles are matched by header text and can all be reassigned by hand:
 Anything else in the export can still go on a card: **Any column** adds a text
 box bound to whichever column you pick.
 
+## File names
+
+Each card is named for the teacher, the birthday, and the student:
+
+    Mrs.-Delgado - 2026-10-05 - Avery-Nakamura.png
+
+so a folder of them falls into the order they are handed out in — one
+classroom together, in date order within it. Either part can be switched off,
+and the date is written as a whole date because a school year runs from
+September into January, which a bare month and day would sort wrongly.
+Anything a gram did not answer is left out rather than leaving a stray
+separator behind. A single **Save this one** produces the same name the card
+would have inside the zip.
+
+Two things in a name would otherwise go wrong quietly. A `/` — this export
+writes co-teachers as `Ms. Chen/Ms. Ruiz` — becomes a folder inside a zip, so
+it is turned into a dash. And a browser handed a download name containing any
+character outside ASCII discards the entire name and calls the file
+`download`: a class taught by Señora Peña would arrive as `download.png`,
+`download(1).png`, indistinguishable. Accents are therefore folded to their
+base letters in the file name only — the card itself still prints the name
+properly.
+
 ## Working through the list
 
 The list is ordered **by birthday** — the order you print and deliver in — and
@@ -82,11 +105,12 @@ cannot read sorts to the end, where it gets noticed rather than lost.
   empty in every row are dropped before matching.
 - **Quantity is honoured**: one order for two grams becomes two cards, with
   de-duplicated file names.
-- **Ages from a birthdate** are worked out against the *Grams handed out on*
-  date, not today, so a batch printed Friday for Monday still says the right
-  number. This only applies to a form that collects a date of birth; where
-  there is an age column, that is what the parent answered and that is what
-  is used.
+- **Ages from a birthdate** are worked out against a *Grams handed out on*
+  date rather than today, so a batch printed Friday for Monday still says the
+  right number. That whole panel only appears for a form that collects a date
+  of birth and no age. Where there is an age column — as Cheddar Up's birthday
+  gram form has — that is the parent's own answer and nothing is calculated,
+  so the panel stays out of the way.
 - **The birthday prints in whichever format suits the card** — *March 14*,
   *March 14th*, *Mon, Mar 14*, *3/14*, *Monday* on its own, and more. Because
   the delivery column carries a real year, the weekday is the day the gram is

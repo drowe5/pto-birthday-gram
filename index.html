@@ -384,10 +384,10 @@
 
       <div class="field">
         <div class="row">
-          <input type="color" id="pColor" aria-label="Text colour">
+          <input type="color" id="pColor" aria-label="Text color">
           <select id="pAlign" class="grow" aria-label="Horizontal alignment">
             <option value="left">Left</option>
-            <option value="center">Centred</option>
+            <option value="center">Centered</option>
             <option value="right">Right</option>
           </select>
           <select id="pValign" class="grow" aria-label="Vertical alignment">
@@ -417,7 +417,7 @@
       <div class="field">
         <label class="check"><input type="checkbox" id="pOutline"> Outline</label>
         <div class="row" id="outlineRow" style="margin-top:6px" hidden>
-          <input type="color" id="pOutlineColor" aria-label="Outline colour">
+          <input type="color" id="pOutlineColor" aria-label="Outline color">
           <input type="number" id="pOutlineWidth" class="grow" min="1" max="40" step="1" aria-label="Outline width">
         </div>
       </div>
@@ -473,13 +473,16 @@
       <button type="button" class="btn small wide danger" id="delField" hidden>Remove this text</button>
     </section>
 
-    <section class="sec">
-      <h2>Delivery</h2>
+    <section class="sec" id="refSec" hidden>
+      <h2>Working out ages</h2>
       <div class="field">
         <label for="refDate">Grams handed out on</label>
         <input type="date" id="refDate">
       </div>
-      <p class="hint">Ages are worked out against this date.</p>
+      <p class="hint">This export has no age column, so each age is counted
+        from the birthday up to this date &mdash; set it to the day the grams
+        are delivered, not today, or a batch printed on Friday for Monday
+        gets one of them wrong.</p>
     </section>
 
     <section class="sec">
@@ -491,6 +494,12 @@
           <option value="numbered">01, 02, 03&hellip;</option>
           <option value="both">01 &ndash; Student name</option>
         </select>
+      </div>
+      <div class="field">
+        <label class="check"><input type="checkbox" id="byTeacher" checked> Put the teacher&rsquo;s name first</label>
+      </div>
+      <div class="field">
+        <label class="check"><input type="checkbox" id="withDate" checked> Include the birthday</label>
       </div>
       <div class="field">
         <label class="check"><input type="checkbox" id="asZip" checked> Bundle &ldquo;Download all&rdquo; into one zip</label>
@@ -747,7 +756,7 @@
     var fmts = doc.getElementsByTagName('numFmt');
     for (var i = 0; i < fmts.length; i++) {
       var code = fmts[i].getAttribute('formatCode') || '';
-      /* Strip the quoted literals and colour codes first; a "d" inside the
+      /* Strip the quoted literals and color codes first; a "d" inside the
          word "Paid" is not a day marker. */
       var bare = code.replace(/"[^"]*"/g, '').replace(/\[[^\]]*\]/g, '');
       custom[fmts[i].getAttribute('numFmtId')] = /[ymdhs]/i.test(bare);
@@ -1787,6 +1796,9 @@
     var has = S.columns.length > 0;
     $('mapSec').hidden = !has;
     $('listSec').hidden = !has;
+    /* Only shown when it decides something: an age column is the parent's own
+       answer, and no date arithmetic can improve on it. */
+    $('refSec').hidden = !!S.map.age || !S.map.birthdate;
     if (has) { renderMap(); }
     refreshPreview();
   }
@@ -2008,17 +2020,54 @@
     });
   }
 
+  /* Two things would quietly ruin a file name here.
+     A slash becomes a folder inside a zip, and this export writes co-teachers
+     as "Ms. Chen/Ms. Ruiz", so it turns into a dash.
+     And a browser handed a download name with any character outside ASCII
+     discards the whole name and calls the file "download" -- so a class
+     taught by Se\u00f1ora Pe\u00f1a would arrive as download.png, download(1).png,
+     and nobody could tell them apart. Accents are therefore folded to their
+     base letters, which keeps the name readable and sortable. Only the file
+     name is folded; the card itself still prints the name properly. Scripts
+     with no accent to fold, such as Korean, are left alone rather than being
+     emptied out. */
   function safeName(s) {
-    return String(s || '').replace(/[^\w\s.\-]/g, '').trim().replace(/\s+/g, '-')
-      .replace(/-{2,}/g, '-').replace(/^[.\-]+|[.\-]+$/g, '').slice(0, 60);
+    return String(s || '')
+      .normalize('NFD').replace(/[\u0300-\u036f]/g, '').normalize('NFC')
+      .replace(/[\/\\]+/g, '-')
+      .replace(/[<>:"|?*]/g, '')
+      .replace(/[\u0000-\u001f]/g, '')
+      .trim()
+      .replace(/\s+/g, '-')
+      .replace(/-{2,}/g, '-')
+      .replace(/^[.\-]+|[.\-]+$/g, '')
+      .slice(0, 60);
   }
 
   function fileNames(rows) {
-    var style = $('outName').value, seen = {}, out = [];
+    var style = $('outName').value;
+    var lead = $('byTeacher').checked;
+    var dated = $('withDate').checked;
+    var seen = {}, out = [];
     rows.forEach(function (r, i) {
-      var num = pad2(i + 1);
+      var num = pad2((r.at != null ? r.at : i) + 1);
       var who = safeName(nameOf(r.row)) || 'gram';
       var base = style === 'numbered' ? num : (style === 'both' ? num + '-' + who : who);
+      /* Sortable, not pretty: whole dates so a school year running from
+         September into January stays in order, which a bare month and day
+         would not. */
+      if (dated && r.when) {
+        var w = r.when;
+        base = (w.y ? w.y + '-' : '') + pad2(w.m) + '-' + pad2(w.d) + ' - ' + base;
+      }
+      /* The teacher goes outermost so a folder of these falls into the order
+         they are handed out in: one classroom together, in date order within
+         it. Anything a gram did not answer is left out rather than leaving a
+         stray separator behind. */
+      if (lead) {
+        var t = safeName(col(r.row, 'teacher'));
+        if (t) { base = t + ' - ' + base; }
+      }
       if (seen[base]) { seen[base]++; base = base + '-' + seen[base]; } else { seen[base] = 1; }
       out.push(base + '.png');
     });
@@ -2126,7 +2175,10 @@
     document.fonts.ready.then(function () {
       return blobOf(renderFull(row));
     }).then(function (b) {
-      download(b, (safeName(nameOf(row)) || 'gram') + '.png');
+      /* Built through the same namer as the batch, carrying its own position
+         so a single save is named exactly as it would be inside the zip. */
+      var here = records()[S.idx];
+      download(b, fileNames([{ row: here.row, when: here.when, at: S.idx }])[0]);
       say('Saved.', 'good');
     }).catch(function (e) { say(e.message, 'warn'); });
   });
@@ -2192,6 +2244,7 @@
       fields: S.fields, map: S.map, filter: S.filter, refDate: S.refDate,
       guides: S.guides, sort: S.sort,
       outName: $('outName').value, asZip: $('asZip').checked,
+      byTeacher: $('byTeacher').checked, withDate: $('withDate').checked,
       artName: S.art ? S.art.name : ''
     };
     /* The artwork rides along when it is small enough to be worth it, so a
@@ -2243,11 +2296,15 @@
     if (saved.sort) { S.sort = saved.sort; }
     if (saved.outName) { $('outName').value = saved.outName; }
     if (saved.asZip != null) { $('asZip').checked = !!saved.asZip; }
+    if (saved.byTeacher != null) { $('byTeacher').checked = !!saved.byTeacher; }
+    if (saved.withDate != null) { $('withDate').checked = !!saved.withDate; }
     return saved.art ? { src: saved.art, name: saved.artName } : null;
   }
 
   $('outName').addEventListener('change', persist);
   $('asZip').addEventListener('change', persist);
+  $('byTeacher').addEventListener('change', persist);
+  $('withDate').addEventListener('change', persist);
 
   /* ---- the layout as a file ---- */
   $('tplSave').addEventListener('click', function () {
