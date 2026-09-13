@@ -119,9 +119,37 @@
   }
   .gram:hover { background: var(--tint); }
   .gram[aria-current=true] { background: #eef1f6; border-left-color: var(--mark); }
+  .gram { position: relative; }
   .gram .who { flex: 1; font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .gram .n { color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; flex: none; }
+  .gram .n {
+    color: var(--ok); font-size: 12px; flex: none; width: 12px; text-align: center;
+    border-radius: 3px;
+  }
+  .gram .n:hover { background: var(--rule-soft); }
+  .gram .when {
+    color: var(--muted); font-size: 12px; flex: none; font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
   .gram.skip .who { text-decoration: line-through; color: var(--muted); }
+  .gram.skip .n { color: var(--mark); }
+  .gram.skip .when { opacity: .55; }
+
+  /* The two boundary actions sit over the date rather than beside it: the
+     panel has no room for both, and the date is what you were reading to
+     decide where the boundary goes. */
+  .gram .acts {
+    position: absolute; right: 9px; top: 50%; transform: translateY(-50%);
+    display: none; gap: 2px; padding-left: 10px;
+    background: linear-gradient(to right, transparent, var(--tint) 10px);
+  }
+  .gram:hover .acts, .gram:focus-within .acts { display: flex; }
+  .gram[aria-current=true] .acts { background: linear-gradient(to right, transparent, #eef1f6 10px); }
+  .gram .act {
+    border: 1px solid var(--rule); background: #fff; border-radius: 4px;
+    width: 21px; height: 20px; line-height: 1; padding: 0; cursor: pointer;
+    color: var(--slate); font-size: 12px;
+  }
+  .gram .act:hover { border-color: var(--ink); background: var(--ink); color: #fff; }
 
   /* ---- mapping rows ---- */
   .map { display: grid; grid-template-columns: 84px 1fr; gap: 6px 8px; align-items: center; }
@@ -251,8 +279,21 @@
 
     <section class="sec" id="listSec" hidden>
       <h2>Grams <span class="count" id="gramCount"></span></h2>
+      <div class="row" style="margin-bottom:9px">
+        <select id="sortBy" class="grow" aria-label="Order the list by">
+          <option value="birthday">By birthday</option>
+          <option value="file">As in the file</option>
+          <option value="name">By name</option>
+        </select>
+        <button type="button" class="btn small" id="allIn">All</button>
+        <button type="button" class="btn small" id="allOut">None</button>
+      </div>
       <div class="grams" id="grams"></div>
-      <p class="hint">Click a name to see that card. Click the number to leave one out.</p>
+      <p class="hint">Click a name to see that card, or its tick to leave that
+        one out. Hovering a row offers &#10514; and &#10515;: exclude
+        everything above it, or include it and everything below &mdash; which
+        is how a batch gets printed up to a date and carried on from there
+        next time.</p>
     </section>
   </div>
 
@@ -393,11 +434,25 @@
       <div class="field" id="dateWrap" hidden>
         <label for="pDateFmt">Date shown as</label>
         <select id="pDateFmt">
-          <option value="long">March 14</option>
-          <option value="longYear">March 14, 2015</option>
-          <option value="short">Mar 14</option>
-          <option value="numeric">3/14</option>
-          <option value="numericYear">3/14/2015</option>
+          <optgroup label="Day and month">
+            <option value="long">March 14</option>
+            <option value="ordinal">March 14th</option>
+            <option value="short">Mar 14</option>
+            <option value="dayFirst">14 March</option>
+            <option value="numeric">3/14</option>
+            <option value="numericPad">03/14</option>
+          </optgroup>
+          <optgroup label="With the weekday">
+            <option value="weekday">Monday, March 14</option>
+            <option value="weekdayShort">Mon, Mar 14</option>
+            <option value="weekdayOnly">Monday</option>
+          </optgroup>
+          <optgroup label="With the year">
+            <option value="longYear">March 14, 2027</option>
+            <option value="shortYear">Mar 14, 2027</option>
+            <option value="numericYear">3/14/2027</option>
+            <option value="iso">2027-03-14</option>
+          </optgroup>
           <option value="raw">exactly as typed</option>
         </select>
       </div>
@@ -478,10 +533,11 @@
     art: null,
     rows: [], columns: [],
     map: { studentFirst: '', studentLast: '', from: '', message: '', age: '',
-           grade: '', teacher: '', deliveryDate: '', birthdate: '', qty: '' },
+           grade: '', teacher: '', birthdate: '', qty: '' },
     filter: { col: '', val: '' },
     fields: [], sel: null, idx: 0, skip: {},
-    refDate: todayISO(), zoom: 'fit', guides: true, sheets: [], sheet: 0
+    refDate: todayISO(), zoom: 'fit', guides: true, sheets: [], sheet: 0,
+    sort: 'birthday'
   };
 
   function todayISO() {
@@ -493,15 +549,14 @@
   function defaultFields() {
     return [
       mk('student',   { y: .40, h: .13, size: .090, weight: '700', font: "'Fredoka', system-ui, sans-serif" }),
-      mk('age',       { y: .54, h: .07, size: .048, weight: '600', prefix: 'Turning ', suffix: '!' }),
-      mk('message',   { y: .64, h: .18, size: .034, italic: true }),
+      mk('age',       { y: .53, h: .07, size: .048, weight: '600', prefix: 'Turning ', suffix: '!' }),
+      mk('message',   { y: .67, h: .16, size: .034, italic: true }),
       mk('from',      { y: .85, h: .06, size: .034, weight: '600', prefix: '\u2014 ' }),
       /* Present but off: which of these belongs on a card depends on whether
          it is handed to the child or sorted by whoever walks the halls. */
+      mk('birthdate', { y: .605, h: .05, size: .030, color: '#5a6472' }),
       mk('grade',     { y: .93, h: .04, size: .022, color: '#5a6472', visible: false }),
-      mk('teacher',   { y: .05, h: .04, size: .022, color: '#5a6472', visible: false }),
-      mk('deliveryDate', { y: .10, h: .04, size: .022, color: '#5a6472', visible: false }),
-      mk('birthdate', { y: .615, h: .05, size: .030, color: '#5a6472', visible: false })
+      mk('teacher',   { y: .05, h: .04, size: .022, color: '#5a6472', visible: false })
     ];
   }
 
@@ -852,6 +907,23 @@
     return { y: y, m: mo, d: d };
   }
 
+  var DAY_LONG = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  var DAY_SHORT = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+  function ordinal(d) {
+    var tens = d % 100;
+    if (tens >= 11 && tens <= 13) { return d + 'th'; }
+    return d + (['th', 'st', 'nd', 'rd'][d % 10] || 'th');
+  }
+
+  function weekdayOf(p) {
+    /* Needs a real year, and the delivery column carries one -- so the day
+       name is the day the gram is handed over, which is the point of it. */
+    if (!p.y) { return -1; }
+    var d = new Date(Date.UTC(p.y, p.m - 1, p.d));
+    return isNaN(d.getTime()) ? -1 : d.getUTCDay();
+  }
+
   function formatDate(raw, fmt) {
     if (fmt === 'raw') { return String(raw || ''); }
     var p = parseDate(raw);
@@ -859,12 +931,23 @@
        sure", "ask mom" -- belongs nowhere near a printed card, so the line is
        dropped instead. Asking for it as typed is the one way to override. */
     if (!p) { return ''; }
+
+    var month = MONTH_LONG[p.m - 1], mshort = MONTH_SHORT[p.m - 1];
+    var dow = weekdayOf(p);
     switch (fmt) {
-      case 'longYear':   return MONTH_LONG[p.m - 1] + ' ' + p.d + (p.y ? ', ' + p.y : '');
-      case 'short':      return MONTH_SHORT[p.m - 1] + ' ' + p.d;
-      case 'numeric':    return p.m + '/' + p.d;
-      case 'numericYear':return p.m + '/' + p.d + (p.y ? '/' + p.y : '');
-      default:           return MONTH_LONG[p.m - 1] + ' ' + p.d;
+      case 'ordinal':      return month + ' ' + ordinal(p.d);
+      case 'short':        return mshort + ' ' + p.d;
+      case 'dayFirst':     return p.d + ' ' + month;
+      case 'numeric':      return p.m + '/' + p.d;
+      case 'numericPad':   return pad2(p.m) + '/' + pad2(p.d);
+      case 'weekday':      return (dow < 0 ? '' : DAY_LONG[dow] + ', ') + month + ' ' + p.d;
+      case 'weekdayShort': return (dow < 0 ? '' : DAY_SHORT[dow] + ', ') + mshort + ' ' + p.d;
+      case 'weekdayOnly':  return dow < 0 ? '' : DAY_LONG[dow];
+      case 'longYear':     return month + ' ' + p.d + (p.y ? ', ' + p.y : '');
+      case 'shortYear':    return mshort + ' ' + p.d + (p.y ? ', ' + p.y : '');
+      case 'numericYear':  return p.m + '/' + p.d + (p.y ? '/' + p.y : '');
+      case 'iso':          return (p.y ? p.y + '-' : '') + pad2(p.m) + '-' + pad2(p.d);
+      default:             return month + ' ' + p.d;
     }
   }
 
@@ -885,11 +968,15 @@
   var recCache = null;
   function invalidate() { recCache = null; }
 
+  /* A gram is identified by where it came from -- which row, and which copy
+     of a multi-quantity order -- never by its position in the list. Sorting
+     and filtering both reorder that list, and an exclusion keyed to a
+     position would silently land on somebody else. */
   function records() {
     if (recCache) { return recCache; }
     var f = S.filter, needle = (f.val || '').toLowerCase();
     var out = [];
-    S.rows.forEach(function (row) {
+    S.rows.forEach(function (row, ri) {
       if (f.col && needle) {
         if (String(row[f.col] || '').toLowerCase().indexOf(needle) < 0) { return; }
       }
@@ -898,14 +985,40 @@
         var q = parseInt(String(row[S.map.qty] || '1').replace(/[^0-9]/g, ''), 10);
         if (q > 0 && q < 60) { n = q; }
       }
-      for (var i = 0; i < n; i++) { out.push(row); }
+      for (var i = 0; i < n; i++) {
+        out.push({ row: row, key: ri + ':' + i, when: parseDate(col(row, 'birthdate')) });
+      }
     });
+
+    if (S.sort === 'birthday') {
+      /* The school year runs across a year boundary, and so do the dates, so
+         they sort as whole dates rather than by month and day. Anything
+         unreadable goes last, where it is noticed. */
+      out.sort(function (a, b) {
+        return (stamp(a.when) - stamp(b.when)) || nameOf(a.row).localeCompare(nameOf(b.row));
+      });
+    } else if (S.sort === 'name') {
+      out.sort(function (a, b) { return nameOf(a.row).localeCompare(nameOf(b.row)); });
+    }
+
     recCache = out;
     return out;
   }
 
+  function stamp(d) {
+    return d ? (d.y || 9999) * 10000 + d.m * 100 + d.d : Infinity;
+  }
+
+  function skipped(g) { return !!S.skip[g.key]; }
+
   function kept() {
-    return records().filter(function (r, i) { return !S.skip[i]; });
+    return records().filter(function (g) { return !skipped(g); });
+  }
+
+  /* The birthday as the list shows it: short, and never a bare year. */
+  function whenLabel(g) {
+    if (!g.when) { return ''; }
+    return MONTH_SHORT[g.when.m - 1] + ' ' + g.when.d;
   }
 
   function col(row, role) {
@@ -938,7 +1051,6 @@
       case 'message':      return col(row, 'message');
       case 'grade':        return col(row, 'grade');
       case 'teacher':      return col(row, 'teacher');
-      case 'deliveryDate': return S.map.deliveryDate ? formatDate(col(row, 'deliveryDate'), field.dateFmt) : '';
       case 'birthdate':    return S.map.birthdate ? formatDate(col(row, 'birthdate'), field.dateFmt) : '';
       /* An age column beats a birthdate: it is what the form asked, so it is
          what the parent meant. Working it out from a birthdate is the
@@ -974,8 +1086,12 @@
     age:          [/student'?s?\s*age/i, /\bage\b/i, /how\s*old/i, /turning/i],
     grade:        [/grade\s*of\s*student/i, /\bgrade\b/i, /\bhomeroom\b/i],
     teacher:      [/teacher'?s?\s*name/i, /\bteacher\b/i, /\bclassroom\b/i],
-    deliveryDate: [/delivery\s*date/i, /date\s*of\s*delivery/i, /\bdeliver/i],
-    birthdate:    [/birth\s*date/i, /date\s*of\s*birth/i, /\bdob\b/i, /birthday/i],
+    /* The delivery date is the birthday: a gram is handed over on the day.
+       Cheddar Up names the column for the delivery, so that is the header to
+       match, and a form that collects a date of birth outright still lands
+       in the same role. */
+    birthdate:    [/delivery\s*date/i, /birth\s*date/i, /date\s*of\s*birth/i,
+                   /\bdob\b/i, /birthday/i, /\bdeliver/i],
     qty:          [/^qty\s*sold$/i, /^qty$/i, /^quantity$/i, /\bhow\s*many\b/i]
   };
   /* A column naming the buyer is a decent guess for From and a terrible one
@@ -987,8 +1103,7 @@
     qty:          [/refund/i, /\bnet\b/i],
     age:          [/message/i, /average/i],
     from:         [/payer/i, /email/i],
-    deliveryDate: [/payment/i],
-    birthdate:    [/message|gram|item|payment/i]
+    birthdate:    [/message|gram|item|payment\s*date/i]
   };
 
   function guessMap(map, columns) {
@@ -1118,7 +1233,7 @@
     student: 'Avery Nakamura', studentFirst: 'Avery', studentLast: 'Nakamura',
     message: 'Happy birthday! Hope your day is the best one yet.',
     from: 'Mom & Dad', age: '10', grade: '4th', teacher: 'Mrs. Delgado',
-    deliveryDate: 'March 14', birthdate: 'March 14', column: 'sample value'
+    birthdate: 'March 14', column: 'sample value'
   };
   function placeholder(f) {
     var v = f.source === 'static' ? f.text : (DEMO[f.source] || '');
@@ -1136,7 +1251,7 @@
     var recs = records();
     if (!recs.length) { return null; }
     S.idx = clamp(S.idx, 0, recs.length - 1);
-    return recs[S.idx];
+    return recs[S.idx].row;
   }
 
   function computeScale(W, H) {
@@ -1333,7 +1448,7 @@
   var SOURCE_LABEL = {
     student: 'Student name', studentFirst: 'First name', studentLast: 'Last name',
     from: 'From', message: 'Message', age: 'Age', grade: 'Grade',
-    teacher: 'Teacher', deliveryDate: 'Delivery date', birthdate: 'Birthdate',
+    teacher: 'Teacher', birthdate: 'Birthday',
     column: 'Any column', static: 'Fixed text'
   };
   function labelOf(f) {
@@ -1387,7 +1502,7 @@
     $('propTitle').textContent = labelOf(f);
     $('staticWrap').hidden = f.source !== 'static';
     $('columnWrap').hidden = f.source !== 'column';
-    $('dateWrap').hidden = f.source !== 'birthdate' && f.source !== 'deliveryDate';
+    $('dateWrap').hidden = f.source !== 'birthdate';
     $('ageWrap').hidden = f.source !== 'age';
     $('delField').hidden = f.source !== 'static' && f.source !== 'column';
     $('outlineRow').hidden = !f.outline;
@@ -1492,8 +1607,7 @@
     ['studentFirst', 'First name'], ['studentLast', 'Last name'],
     ['from', 'From'], ['message', 'Message'], ['age', 'Age'],
     ['grade', 'Grade'], ['teacher', 'Teacher'],
-    ['deliveryDate', 'Delivery date'], ['birthdate', 'Birthdate'],
-    ['qty', 'Quantity']
+    ['birthdate', 'Birthday'], ['qty', 'Quantity']
   ];
 
   function renderMap() {
@@ -1549,15 +1663,17 @@
         '. Those lines stay blank on every card.';
       return;
     }
-    var noName = 0, noAge = 0;
-    recs.forEach(function (r) {
-      if (!nameOf(r)) { noName++; }
-      var a = S.map.age ? ageValue(col(r, 'age'), 'number') : ageFrom(col(r, 'birthdate'), 'turning');
+    var noName = 0, noAge = 0, noDate = 0;
+    recs.forEach(function (g) {
+      if (!nameOf(g.row)) { noName++; }
+      var a = S.map.age ? ageValue(col(g.row, 'age'), 'number') : ageFrom(col(g.row, 'birthdate'), 'turning');
       if (!a) { noAge++; }
+      if (!g.when) { noDate++; }
     });
     var notes = [];
     if (noName) { notes.push(noName + ' with no student name'); }
     if (noAge) { notes.push(noAge + ' whose age cannot be read, so that line is left off'); }
+    if (noDate) { notes.push(noDate + ' with no readable birthday, sorted to the end'); }
     hint.className = 'hint' + (notes.length ? ' alert' : '');
     hint.textContent = notes.length
       ? recs.length + ' grams, ' + notes.join(' and ') + '.'
@@ -1572,36 +1688,82 @@
   });
 
   /* ---- the gram list ---- */
+  function setAll(on) {
+    if (on) { S.skip = {}; }
+    else { records().forEach(function (g) { S.skip[g.key] = true; }); }
+    renderGrams(); updateButtons(); persist();
+  }
+
+  /* The working pattern is a rolling batch: everything up to last week is
+     done, so exclude above the boundary and include from it downwards. Both
+     act on the list as currently sorted, which is why they are only offered
+     from a row. */
+  function excludeAbove(at) {
+    records().forEach(function (g, i) { if (i < at) { S.skip[g.key] = true; } });
+    renderGrams(); updateButtons(); persist();
+  }
+  function includeBelow(at) {
+    records().forEach(function (g, i) { if (i >= at) { delete S.skip[g.key]; } });
+    renderGrams(); updateButtons(); persist();
+  }
+
+  function actionButton(glyph, title, fn) {
+    var b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'act';
+    b.textContent = glyph;
+    b.title = title;
+    b.setAttribute('aria-label', title);
+    b.addEventListener('click', function (e) { e.stopPropagation(); fn(); });
+    return b;
+  }
+
   function renderGrams() {
     var recs = records();
     var host = $('grams');
     host.textContent = '';
-    $('gramCount').textContent = recs.length ? '(' + kept().length + ' of ' + recs.length + ')' : '';
-    recs.forEach(function (row, i) {
+    $('gramCount').textContent = recs.length ? kept().length + ' of ' + recs.length : '';
+    recs.forEach(function (g, i) {
       var b = document.createElement('button');
       b.type = 'button';
-      b.className = 'gram' + (S.skip[i] ? ' skip' : '');
+      b.className = 'gram' + (skipped(g) ? ' skip' : '');
       b.setAttribute('aria-current', i === S.idx ? 'true' : 'false');
 
       var n = document.createElement('span');
       n.className = 'n';
-      n.textContent = pad2(i + 1);
-      n.title = S.skip[i] ? 'Put this one back in' : 'Leave this one out';
+      n.textContent = skipped(g) ? '\u2717' : '\u2713';
+      n.title = skipped(g) ? 'Put this one back in' : 'Leave this one out';
       n.addEventListener('click', function (e) {
         e.stopPropagation();
-        if (S.skip[i]) { delete S.skip[i]; } else { S.skip[i] = true; }
-        renderGrams(); updateButtons();
+        if (skipped(g)) { delete S.skip[g.key]; } else { S.skip[g.key] = true; }
+        renderGrams(); updateButtons(); persist();
       });
 
       var who = document.createElement('span');
       who.className = 'who';
-      who.textContent = nameOf(row) || '(no name)';
+      who.textContent = nameOf(g.row) || '(no name)';
 
-      b.appendChild(n); b.appendChild(who);
+      var when = document.createElement('span');
+      when.className = 'when';
+      when.textContent = whenLabel(g) || '\u2014';
+
+      var acts = document.createElement('span');
+      acts.className = 'acts';
+      acts.appendChild(actionButton('\u2912', 'Exclude everything above this one', function () { excludeAbove(i); }));
+      acts.appendChild(actionButton('\u2913', 'Include this one and everything below it', function () { includeBelow(i); }));
+
+      b.appendChild(n); b.appendChild(who); b.appendChild(when); b.appendChild(acts);
       b.addEventListener('click', function () { S.idx = i; refreshPreview(); });
       host.appendChild(b);
     });
   }
+
+  $('allIn').addEventListener('click', function () { setAll(true); });
+  $('allOut').addEventListener('click', function () { setAll(false); });
+  $('sortBy').addEventListener('change', function () {
+    S.sort = this.value;
+    invalidate(); S.idx = 0; refreshPreview(); persist();
+  });
 
   function refreshPreview() {
     var recs = records();
@@ -1710,6 +1872,7 @@
     S.columns = res.columns;
     S.rows = res.rows;
     S.skip = {};
+    S.sort = $('sortBy').value || 'birthday';
     S.idx = 0;
     guessMap();
     invalidate();
@@ -1769,7 +1932,7 @@
   }
   $('sheetPick').addEventListener('change', function () {
     S.map = { studentFirst: '', studentLast: '', from: '', message: '', age: '',
-              grade: '', teacher: '', deliveryDate: '', birthdate: '', qty: '' };
+              grade: '', teacher: '', birthdate: '', qty: '' };
     useSheet(parseInt(this.value, 10));
   });
 
@@ -1972,7 +2135,7 @@
   $('saveAll').addEventListener('click', function () {
     if (busy || !S.art) { return; }
     var rows = [];
-    records().forEach(function (r, i) { if (!S.skip[i]) { rows.push({ row: r, i: i }); } });
+    records().forEach(function (g) { if (!skipped(g)) { rows.push(g); } });
     if (!rows.length) { return; }
     var names = fileNames(rows);
     var zip = $('asZip').checked;
@@ -2027,7 +2190,7 @@
     var save = {
       v: 1,
       fields: S.fields, map: S.map, filter: S.filter, refDate: S.refDate,
-      guides: S.guides,
+      guides: S.guides, sort: S.sort,
       outName: $('outName').value, asZip: $('asZip').checked,
       artName: S.art ? S.art.name : ''
     };
@@ -2060,6 +2223,7 @@
         var merged = {};
         Object.keys(template).forEach(function (k) { merged[k] = template[k]; });
         Object.keys(f).forEach(function (k) { merged[k] = f[k]; });
+        if (merged.source === 'deliveryDate') { merged.source = 'birthdate'; }
         if (!merged.id) { merged.id = merged.source + '-' + Math.random().toString(36).slice(2, 7); }
         return merged;
       });
@@ -2071,10 +2235,12 @@
         if (saved.map[k]) { S.map[k] = saved.map[k]; }
       });
       if (!S.map.studentFirst && saved.map.student) { S.map.studentFirst = saved.map.student; }
+      if (!S.map.birthdate && saved.map.deliveryDate) { S.map.birthdate = saved.map.deliveryDate; }
     }
     if (saved.filter) { S.filter = saved.filter; }
     if (saved.refDate) { S.refDate = saved.refDate; }
     if (saved.guides != null) { S.guides = !!saved.guides; }
+    if (saved.sort) { S.sort = saved.sort; }
     if (saved.outName) { $('outName').value = saved.outName; }
     if (saved.asZip != null) { $('asZip').checked = !!saved.asZip; }
     return saved.art ? { src: saved.art, name: saved.artName } : null;
@@ -2123,6 +2289,7 @@
   S.sel = S.fields[0].id;
   $('refDate').value = S.refDate;
   $('guides').checked = S.guides;
+  $('sortBy').value = S.sort;
   renderFieldList();
   syncProps();
   refresh();

@@ -40,12 +40,29 @@ These roles are matched by header text and can all be reassigned by hand:
 | Age | *Student's Age* |
 | Grade | *Grade of Student* |
 | Teacher | *Teacher's Name* |
-| Delivery date | *Delivery Date* |
-| Birthdate | *Date of Birth*, if a form collects one instead of an age |
+| Birthday | *Delivery Date* — a gram is handed over on the day, so that column is the birthday. A form collecting a *Date of Birth* lands in the same role. |
 | Quantity | *Qty Sold* |
 
 Anything else in the export can still go on a card: **Any column** adds a text
 box bound to whichever column you pick.
+
+## Working through the list
+
+The list is ordered **by birthday** — the order you print and deliver in — and
+shows each date beside the name. *As in the file* and *by name* are there too.
+
+Grams can be left out of a batch without being deleted:
+
+- **The tick** beside a name drops that one, or puts it back.
+- **All** and **None** at the top of the list do the whole batch.
+- **Hovering a row** offers two more, which is how a rolling batch works:
+  &#10514; excludes everything above that row, and &#10515; includes that row
+  and everything below it. Click both on the first gram you have not done yet
+  and the batch is exactly the ones still to print.
+
+An exclusion belongs to a *gram*, not to a position, so re-sorting the list or
+changing the filter never moves it onto somebody else. A birthday the page
+cannot read sorts to the end, where it gets noticed rather than lost.
 
 ## Things it handles because the real data needed it
 
@@ -66,7 +83,14 @@ box bound to whichever column you pick.
   de-duplicated file names.
 - **Ages from a birthdate** are worked out against the *Grams handed out on*
   date, not today, so a batch printed Friday for Monday still says the right
-  number.
+  number. This only applies to a form that collects a date of birth; where
+  there is an age column, that is what the parent answered and that is what
+  is used.
+- **The birthday prints in whichever format suits the card** — *March 14*,
+  *March 14th*, *Mon, Mar 14*, *3/14*, *Monday* on its own, and more. Because
+  the delivery column carries a real year, the weekday is the day the gram is
+  actually handed over. Year-bearing formats are there but usually wrong on a
+  card: that year is the school year, not the year the child was born.
 
 ## Notes on the page
 
