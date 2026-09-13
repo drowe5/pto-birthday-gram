@@ -1,0 +1,1998 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Birthday Gram Maker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@400..800&family=Caveat:wght@400..700&family=Fredoka:wght@300..700&family=Lobster&family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Poppins:ital,wght@0,300;0,400;0,600;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+  /* A tool for judging a printed card, so it keeps one neutral light chrome
+     around a dark stage rather than following the operating system theme. */
+  *, *::before, *::after { box-sizing: border-box; }
+  :root {
+    --ink: #172230;
+    --slate: #3a4450;
+    --paper: #e9eaee;
+    --panel: #ffffff;
+    --rule: #d3d7de;
+    --rule-soft: #e4e7ec;
+    --mark: #d8214b;
+    --muted: #626d7c;
+    --ok: #1c7a55;
+    --warn: #9a6400;
+    --tint: #f6f7f9;
+  }
+  html, body { height: 100%; }
+  body {
+    margin: 0; background: var(--paper); color: var(--ink);
+    font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    font-size: 14px; line-height: 1.45;
+    display: flex; flex-direction: column; overflow: hidden;
+  }
+  button, input, select, textarea { font: inherit; color: var(--ink); }
+  :focus-visible { outline: 2px solid var(--mark); outline-offset: 2px; }
+
+  /* ---- chrome ---- */
+  .bar {
+    display: flex; align-items: center; gap: 14px; flex: none;
+    padding: 10px 16px; background: var(--panel); border-bottom: 1px solid var(--rule);
+  }
+  .brand { font-weight: 650; letter-spacing: -0.02em; font-size: 15px; white-space: nowrap; }
+  .bar-spacer { flex: 1; }
+  .status { color: var(--muted); font-size: 13px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .status:empty { display: none; }
+  .status.warn { color: var(--mark); }
+  .status.good { color: var(--ok); }
+  .status.busy { color: var(--slate); }
+
+  .btn {
+    border: 1px solid var(--rule); background: var(--panel); border-radius: 6px;
+    padding: 7px 12px; cursor: pointer; white-space: nowrap;
+  }
+  .btn:hover:not(:disabled) { background: #f3f4f7; }
+  .btn:disabled { opacity: .4; cursor: default; }
+  .btn.primary { background: var(--ink); border-color: var(--ink); color: #fff; font-weight: 550; }
+  .btn.primary:hover:not(:disabled) { background: #223244; }
+  .btn.small { padding: 4px 9px; font-size: 13px; }
+  .btn.wide { width: 100%; }
+  .btn.danger:hover:not(:disabled) { border-color: var(--mark); color: var(--mark); }
+
+  /* ---- panels ---- */
+  main { flex: 1; display: flex; min-height: 0; }
+  .panel {
+    width: 300px; flex: none; background: var(--panel); overflow-y: auto;
+    padding-bottom: 24px;
+  }
+  .panel.left { border-right: 1px solid var(--rule); }
+  .panel.right { border-left: 1px solid var(--rule); }
+  .sec { border-bottom: 1px solid var(--rule-soft); padding: 14px 15px; }
+  .sec h2 {
+    margin: 0 0 10px; font-size: 13px; font-weight: 650; letter-spacing: -0.01em;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .sec h2 .count { font-weight: 400; color: var(--muted); }
+  .sec.collapsed > *:not(h2) { display: none; }
+  .sec h2 .toggle {
+    margin-left: auto; border: 0; background: none; color: var(--muted);
+    cursor: pointer; padding: 2px 4px; font-size: 12px;
+  }
+  .field { margin-bottom: 10px; }
+  .field:last-child { margin-bottom: 0; }
+  .field > label { display: block; margin-bottom: 4px; color: var(--muted); font-size: 13px; }
+  .row { display: flex; gap: 8px; align-items: center; }
+  .row > * { min-width: 0; }
+  .grow { flex: 1; }
+  input[type=text], input[type=number], input[type=password], input[type=date], select, textarea {
+    width: 100%; border: 1px solid var(--rule); border-radius: 6px;
+    padding: 6px 8px; background: #fff;
+  }
+  textarea { resize: vertical; min-height: 56px; }
+  input[type=color] {
+    width: 34px; height: 32px; padding: 2px; border: 1px solid var(--rule);
+    border-radius: 6px; background: #fff; cursor: pointer; flex: none;
+  }
+  input[type=range] { width: 100%; }
+  .hint { color: var(--muted); font-size: 12.5px; margin-top: 8px; line-height: 1.4; }
+  .hint.alert { color: var(--mark); }
+  .hint code { background: var(--tint); border: 1px solid var(--rule-soft); border-radius: 4px; padding: 0 4px; }
+  .check { display: flex; align-items: center; gap: 7px; cursor: pointer; }
+  .check input { flex: none; margin: 0; }
+
+  /* file drop targets */
+  .drop {
+    border: 1.5px dashed var(--rule); border-radius: 8px; padding: 14px 10px;
+    text-align: center; color: var(--muted); cursor: pointer; background: var(--tint);
+  }
+  .drop:hover, .drop.over { border-color: var(--ink); color: var(--ink); background: #fff; }
+  .drop strong { display: block; color: var(--ink); font-weight: 550; }
+  .drop.has { text-align: left; padding: 9px 10px; border-style: solid; background: #fff; }
+  .filename { font-size: 12.5px; word-break: break-all; }
+
+  /* ---- the gram list ---- */
+  .grams { max-height: 320px; overflow-y: auto; margin: 0 -15px; }
+  .gram {
+    display: flex; gap: 8px; align-items: baseline; width: 100%; text-align: left;
+    padding: 6px 15px; border: 0; background: none; cursor: pointer; border-left: 2px solid transparent;
+  }
+  .gram:hover { background: var(--tint); }
+  .gram[aria-current=true] { background: #eef1f6; border-left-color: var(--mark); }
+  .gram .who { flex: 1; font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .gram .n { color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; flex: none; }
+  .gram.skip .who { text-decoration: line-through; color: var(--muted); }
+
+  /* ---- mapping rows ---- */
+  .map { display: grid; grid-template-columns: 84px 1fr; gap: 6px 8px; align-items: center; }
+  .map label { color: var(--muted); font-size: 12.5px; }
+  .map select { padding: 5px 6px; font-size: 13px; }
+
+  /* ---- field list ---- */
+  .flist { margin: 0 -15px 10px; }
+  .frow {
+    display: flex; align-items: center; gap: 8px; padding: 5px 15px;
+    border-left: 2px solid transparent; cursor: pointer;
+  }
+  .frow:hover { background: var(--tint); }
+  .frow[aria-current=true] { background: #eef1f6; border-left-color: var(--mark); }
+  .frow .nm { flex: 1; font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .frow .eye {
+    border: 0; background: none; cursor: pointer; padding: 2px 3px; color: var(--muted);
+    font-size: 13px; line-height: 1; flex: none;
+  }
+  .frow.off .nm { color: var(--muted); text-decoration: line-through; }
+  .swatch { width: 12px; height: 12px; border-radius: 3px; border: 1px solid rgba(0,0,0,.2); flex: none; }
+
+  /* ---- stage ---- */
+  .workspace { flex: 1; display: flex; flex-direction: column; min-width: 0; background: #2d363f; }
+  .stage {
+    flex: 1; min-height: 0; overflow: auto; display: grid; place-items: center; padding: 22px;
+  }
+  .sheet { position: relative; line-height: 0; box-shadow: 0 8px 34px rgba(0,0,0,.45); background: #fff; }
+  #canvas { display: block; cursor: default; touch-action: none; max-width: 100%; }
+  .empty { color: #97a3b1; text-align: center; max-width: 320px; line-height: 1.5; }
+  .empty strong { color: #e4e9ef; display: block; margin-bottom: 6px; font-size: 15px; }
+  .zoombar {
+    flex: none; display: flex; align-items: center; gap: 10px; padding: 7px 14px;
+    background: #232b33; color: #cfd6de; border-top: 1px solid #39424c; font-size: 13px;
+  }
+  .zoombar .btn {
+    background: transparent; border-color: #4a545f; color: #cfd6de;
+  }
+  .zoombar .btn:hover:not(:disabled) { background: rgba(255,255,255,.12); }
+  .zoombar .spacer { flex: 1; }
+  .zoombar .nudge { color: #8d98a5; }
+
+  /* ---- progress ---- */
+  .prog { height: 4px; background: var(--rule-soft); border-radius: 2px; overflow: hidden; margin-top: 8px; }
+  .prog i { display: block; height: 100%; background: var(--mark); width: 0; transition: width .12s linear; }
+
+  /* ---- JSON explorer ---- */
+  .peek {
+    margin-top: 8px; max-height: 190px; overflow: auto; background: var(--tint);
+    border: 1px solid var(--rule-soft); border-radius: 6px; padding: 8px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 11.5px; line-height: 1.5; white-space: pre-wrap; word-break: break-word;
+  }
+  .crumbs { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 8px; }
+  .crumbs button {
+    border: 1px solid var(--rule); background: #fff; border-radius: 999px;
+    padding: 2px 9px; font-size: 12px; cursor: pointer;
+  }
+  .crumbs button:hover { border-color: var(--ink); }
+
+  @media (max-width: 1080px) {
+    body { overflow: auto; }
+    main { flex-direction: column; }
+    .panel, .panel.left, .panel.right {
+      width: auto; border: 0; border-bottom: 1px solid var(--rule);
+    }
+    .workspace { min-height: 62vh; order: -1; }
+  }
+</style>
+</head>
+<body>
+
+<header class="bar">
+  <span class="brand">Birthday Gram Maker</span>
+  <span class="status" id="status" role="status"></span>
+  <span class="bar-spacer"></span>
+  <button type="button" class="btn" id="savePng" disabled>Save this one</button>
+  <button type="button" class="btn primary" id="saveAll" disabled>Download all</button>
+</header>
+
+<main>
+  <!-- ============ left: what goes on the cards ============ -->
+  <div class="panel left">
+
+    <section class="sec">
+      <h2>Card artwork</h2>
+      <div class="drop" id="artDrop" tabindex="0" role="button">
+        <strong>Drop the card image</strong>
+        PNG or JPG &middot; or click to choose
+      </div>
+      <input type="file" id="artFile" accept="image/*" hidden>
+      <p class="hint" id="artHint">Everything is drawn at this image&rsquo;s full pixel size, so use the
+        resolution you want to print &mdash; 300&nbsp;dpi on a 5&times;7 card is 1500&times;2100.</p>
+    </section>
+
+    <section class="sec">
+      <h2>Orders</h2>
+      <div class="row" style="margin-bottom:10px">
+        <button type="button" class="btn small grow" id="tabCsv" aria-pressed="true">Spreadsheet</button>
+        <button type="button" class="btn small grow" id="tabApi" aria-pressed="false">Cheddar Up</button>
+      </div>
+
+      <div id="paneCsv">
+        <div class="drop" id="csvDrop" tabindex="0" role="button">
+          <strong>Drop the export</strong>
+          CSV or TSV &middot; or click to choose
+        </div>
+        <input type="file" id="csvFile" accept=".csv,.tsv,.txt,text/csv" hidden>
+        <p class="hint">In Cheddar&nbsp;Up, open the collection, then
+          <em>Reports &rarr; Export</em> and choose the item-level report so each
+          gram is its own row. If you only have an .xlsx, open it and
+          <em>Save&nbsp;as &rarr; CSV</em> first.</p>
+      </div>
+
+      <div id="paneApi" hidden>
+        <div class="field">
+          <label for="apiBase">Proxy file on your server</label>
+          <input type="text" id="apiBase" value="cheddar.php" spellcheck="false">
+        </div>
+        <div class="field">
+          <label for="apiToken">Access password (from config.php)</label>
+          <input type="password" id="apiToken" autocomplete="off" spellcheck="false">
+        </div>
+        <div class="field">
+          <label for="apiPath">Endpoint</label>
+          <div class="row">
+            <input type="text" id="apiPath" class="grow" value="/v1/collections" spellcheck="false">
+            <button type="button" class="btn small" id="apiGo">Get</button>
+          </div>
+        </div>
+        <div class="row">
+          <button type="button" class="btn small grow" id="apiProbe">Check setup</button>
+          <button type="button" class="btn small grow" id="apiUse" disabled>Use these rows</button>
+        </div>
+        <div class="crumbs" id="apiCrumbs"></div>
+        <div class="peek" id="apiPeek" hidden></div>
+        <p class="hint">Start at <code>/v1/collections</code> to find your birthday gram
+          collection, then follow its id into the endpoint that lists payments or items.
+          Whatever comes back, the rows below get mapped the same way.</p>
+      </div>
+    </section>
+
+    <section class="sec" id="mapSec" hidden>
+      <h2>Which column is which</h2>
+      <div class="map" id="mapRows"></div>
+      <div class="field" style="margin-top:12px">
+        <label for="filterCol">Only rows where&hellip;</label>
+        <div class="row">
+          <select id="filterCol" class="grow"></select>
+          <input type="text" id="filterVal" class="grow" placeholder="contains&hellip;">
+        </div>
+      </div>
+      <p class="hint" id="mapHint"></p>
+    </section>
+
+    <section class="sec" id="listSec" hidden>
+      <h2>Grams <span class="count" id="gramCount"></span></h2>
+      <div class="grams" id="grams"></div>
+      <p class="hint">Click a name to see that card. Click the number to leave one out.</p>
+    </section>
+  </div>
+
+  <!-- ============ centre: the card ============ -->
+  <section class="workspace">
+    <div class="stage" id="stage">
+      <div class="empty" id="empty">
+        <strong>Start with the card artwork</strong>
+        Drop in the background image on the left, then load the orders.
+        Drag each piece of text where it belongs &mdash; the arrangement you
+        set is used for every gram.
+      </div>
+      <div class="sheet" id="sheet" hidden><canvas id="canvas"></canvas></div>
+    </div>
+    <div class="zoombar">
+      <button type="button" class="btn small" id="prevGram" disabled>&larr;</button>
+      <span id="gramLabel">No orders loaded</span>
+      <button type="button" class="btn small" id="nextGram" disabled>&rarr;</button>
+      <span class="spacer"></span>
+      <span class="nudge" id="nudgeHint">Drag to place &middot; arrow keys nudge &middot; shift for 10&times;</span>
+      <label class="check" style="color:#cfd6de"><input type="checkbox" id="guides" checked> Guides</label>
+      <select id="zoom" style="width:auto;background:transparent;border-color:#4a545f;color:#cfd6de">
+        <option value="fit" selected>Fit</option>
+        <option value="0.25">25%</option>
+        <option value="0.5">50%</option>
+        <option value="0.75">75%</option>
+        <option value="1">100%</option>
+      </select>
+    </div>
+  </section>
+
+  <!-- ============ right: how the text looks ============ -->
+  <div class="panel right">
+    <section class="sec">
+      <h2>Text on the card</h2>
+      <div class="flist" id="flist"></div>
+      <button type="button" class="btn small wide" id="addField">Add a line of fixed text</button>
+    </section>
+
+    <section class="sec" id="propSec" hidden>
+      <h2 id="propTitle">Selected</h2>
+
+      <div class="field" id="staticWrap" hidden>
+        <label for="pText">Text</label>
+        <textarea id="pText" rows="2"></textarea>
+      </div>
+
+      <div class="field">
+        <label for="pFont">Typeface</label>
+        <select id="pFont">
+          <optgroup label="Playful">
+            <option value="'Fredoka', system-ui, sans-serif">Fredoka</option>
+            <option value="'Baloo 2', system-ui, sans-serif">Baloo 2</option>
+            <option value="'Caveat', cursive">Caveat (handwritten)</option>
+            <option value="'Lobster', cursive">Lobster</option>
+          </optgroup>
+          <optgroup label="Plain">
+            <option value="'Poppins', system-ui, sans-serif">Poppins</option>
+            <option value="'Playfair Display', Georgia, serif">Playfair Display</option>
+            <option value="Georgia, 'Times New Roman', serif">Georgia</option>
+            <option value="system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif">System sans</option>
+            <option value="'Courier New', ui-monospace, monospace">Courier</option>
+          </optgroup>
+        </select>
+      </div>
+
+      <div class="field">
+        <div class="row">
+          <div class="grow">
+            <label for="pSize">Size</label>
+            <input type="number" id="pSize" min="6" max="600" step="1">
+          </div>
+          <div class="grow">
+            <label for="pWeight">Weight</label>
+            <select id="pWeight">
+              <option value="300">Light</option>
+              <option value="400">Regular</option>
+              <option value="600">Semibold</option>
+              <option value="700">Bold</option>
+              <option value="800">Heavy</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="field">
+        <div class="row">
+          <input type="color" id="pColor" aria-label="Text colour">
+          <select id="pAlign" class="grow" aria-label="Horizontal alignment">
+            <option value="left">Left</option>
+            <option value="center">Centred</option>
+            <option value="right">Right</option>
+          </select>
+          <select id="pValign" class="grow" aria-label="Vertical alignment">
+            <option value="top">Top</option>
+            <option value="middle">Middle</option>
+            <option value="bottom">Bottom</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="field">
+        <div class="row">
+          <label class="check grow"><input type="checkbox" id="pItalic"> Italic</label>
+          <label class="check grow"><input type="checkbox" id="pUpper"> CAPS</label>
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="pLine">Line spacing <span id="pLineVal" class="count"></span></label>
+        <input type="range" id="pLine" min="0.85" max="2" step="0.05">
+      </div>
+
+      <div class="field">
+        <label class="check"><input type="checkbox" id="pShrink"> Shrink long text to fit its box</label>
+      </div>
+
+      <div class="field">
+        <label class="check"><input type="checkbox" id="pOutline"> Outline</label>
+        <div class="row" id="outlineRow" style="margin-top:6px" hidden>
+          <input type="color" id="pOutlineColor" aria-label="Outline colour">
+          <input type="number" id="pOutlineWidth" class="grow" min="1" max="40" step="1" aria-label="Outline width">
+        </div>
+      </div>
+
+      <div class="field">
+        <label class="check"><input type="checkbox" id="pShadow"> Drop shadow</label>
+      </div>
+
+      <div class="field" id="dateWrap" hidden>
+        <label for="pDateFmt">Date shown as</label>
+        <select id="pDateFmt">
+          <option value="long">March 14</option>
+          <option value="longYear">March 14, 2015</option>
+          <option value="short">Mar 14</option>
+          <option value="numeric">3/14</option>
+          <option value="numericYear">3/14/2015</option>
+          <option value="raw">exactly as typed</option>
+        </select>
+      </div>
+
+      <div class="field" id="ageWrap" hidden>
+        <label for="pAgeMode">Age counted as</label>
+        <select id="pAgeMode">
+          <option value="turning">the age they turn this birthday</option>
+          <option value="now">their age on the delivery date</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label for="pPrefix">Before / after the value</label>
+        <div class="row">
+          <input type="text" id="pPrefix" class="grow" placeholder="e.g. From&nbsp;">
+          <input type="text" id="pSuffix" class="grow" placeholder="e.g. !">
+        </div>
+      </div>
+
+      <button type="button" class="btn small wide danger" id="delField" hidden>Remove this text</button>
+    </section>
+
+    <section class="sec">
+      <h2>Delivery</h2>
+      <div class="field">
+        <label for="refDate">Grams handed out on</label>
+        <input type="date" id="refDate">
+      </div>
+      <p class="hint">Ages are worked out against this date.</p>
+    </section>
+
+    <section class="sec">
+      <h2>Saving</h2>
+      <div class="field">
+        <label for="outName">File names</label>
+        <select id="outName">
+          <option value="student">Student name</option>
+          <option value="numbered">01, 02, 03&hellip;</option>
+          <option value="both">01 &ndash; Student name</option>
+        </select>
+      </div>
+      <div class="field">
+        <label class="check"><input type="checkbox" id="asZip" checked> Bundle &ldquo;Download all&rdquo; into one zip</label>
+      </div>
+      <div class="prog" id="prog" hidden><i id="progBar"></i></div>
+      <p class="hint">Without the zip, the browser asks once to allow several
+        downloads and then saves each PNG separately.</p>
+    </section>
+
+    <section class="sec">
+      <h2>Template</h2>
+      <div class="row">
+        <button type="button" class="btn small grow" id="tplSave">Save layout</button>
+        <button type="button" class="btn small grow" id="tplLoad">Load layout</button>
+      </div>
+      <button type="button" class="btn small wide" id="tplReset" style="margin-top:8px">Start the layout over</button>
+      <input type="file" id="tplFile" accept=".json,application/json" hidden>
+      <p class="hint">The layout is kept in this browser as you work. Saving writes
+        it to a file you can keep with the artwork or hand to someone else.</p>
+    </section>
+  </div>
+</main>
+
+<script>
+(function () {
+  'use strict';
+
+  var $ = function (id) { return document.getElementById(id); };
+  var clamp = function (v, a, b) { return Math.max(a, Math.min(b, v)); };
+  var STORE = 'birthday-grams/v1';
+
+  /* ------------------------------------------------------------------ *
+   * state
+   *
+   * Every position and size is kept as a fraction of the artwork, never
+   * in pixels, so one saved layout fits a 5x7 proof and the 300dpi file
+   * it is printed from without being redrawn.
+   * ------------------------------------------------------------------ */
+  var S = {
+    art: null,
+    rows: [], columns: [],
+    map: { student: '', message: '', from: '', birthdate: '', qty: '' },
+    filter: { col: '', val: '' },
+    fields: [], sel: null, idx: 0, skip: {},
+    refDate: todayISO(), zoom: 'fit', source: 'csv', guides: true
+  };
+
+  function todayISO() {
+    var d = new Date();
+    return d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate());
+  }
+  function pad2(n) { return (n < 10 ? '0' : '') + n; }
+
+  function defaultFields() {
+    return [
+      mk('student',   'Student name', { y: .40, h: .13, size: .090, weight: '700', font: "'Fredoka', system-ui, sans-serif" }),
+      mk('age',       'Age',          { y: .54, h: .07, size: .048, weight: '600', prefix: 'Turning ', suffix: '!' }),
+      mk('birthdate', 'Birthdate',    { y: .615, h: .05, size: .030, weight: '400', color: '#5a6472' }),
+      mk('message',   'Message',      { y: .69, h: .16, size: .034, weight: '400', italic: true, shrink: true }),
+      mk('from',      'From',         { y: .87, h: .06, size: .034, weight: '600', prefix: '— ' })
+    ];
+  }
+  function mk(source, label, o) {
+    o = o || {};
+    return {
+      id: source + '-' + Math.random().toString(36).slice(2, 7),
+      source: source, label: label, text: o.text || '',
+      x: o.x != null ? o.x : .08, y: o.y, w: o.w != null ? o.w : .84, h: o.h,
+      size: o.size, font: o.font || "'Poppins', system-ui, sans-serif",
+      weight: o.weight || '400', italic: !!o.italic, upper: !!o.upper,
+      color: o.color || '#1d2733', align: o.align || 'center', valign: o.valign || 'middle',
+      line: o.line || 1.2, shrink: o.shrink !== false,
+      outline: !!o.outline, outlineColor: o.outlineColor || '#ffffff', outlineWidth: o.outlineWidth || 6,
+      shadow: !!o.shadow, prefix: o.prefix || '', suffix: o.suffix || '',
+      dateFmt: o.dateFmt || 'long', ageMode: o.ageMode || 'turning', visible: true
+    };
+  }
+
+  var statusTimer;
+  function say(msg, kind) {
+    var el = $('status');
+    el.textContent = msg || '';
+    el.className = 'status' + (kind ? ' ' + kind : '');
+    clearTimeout(statusTimer);
+    if (msg && kind !== 'busy') {
+      statusTimer = setTimeout(function () {
+        if (el.textContent === msg) { el.textContent = ''; el.className = 'status'; }
+      }, 6000);
+    }
+  }
+
+  /* ------------------------------------------------------------------ *
+   * reading a spreadsheet export
+   * ------------------------------------------------------------------ */
+
+  /* RFC 4180: quoted fields may hold the delimiter, a newline, or a doubled
+     quote, so this walks character by character rather than splitting. */
+  function parseDelimited(text, delim) {
+    var rows = [], row = [], cell = '', quoted = false, i = 0;
+    if (text.charCodeAt(0) === 0xFEFF) { text = text.slice(1); }
+    while (i < text.length) {
+      var c = text[i];
+      if (quoted) {
+        if (c === '"') {
+          if (text[i + 1] === '"') { cell += '"'; i += 2; continue; }
+          quoted = false; i++; continue;
+        }
+        cell += c; i++; continue;
+      }
+      if (c === '"' && cell === '') { quoted = true; i++; continue; }
+      if (c === delim) { row.push(cell); cell = ''; i++; continue; }
+      if (c === '\r') { i++; continue; }
+      if (c === '\n') { row.push(cell); rows.push(row); row = []; cell = ''; i++; continue; }
+      cell += c; i++;
+    }
+    if (cell !== '' || row.length) { row.push(cell); rows.push(row); }
+    return rows.filter(function (r) { return r.length > 1 || (r[0] || '').trim() !== ''; });
+  }
+
+  function sniffDelimiter(text) {
+    var line = text.split(/\r?\n/)[0] || '';
+    return (line.split('\t').length > line.split(',').length) ? '\t' : ',';
+  }
+
+  function rowsFromTable(table) {
+    if (!table.length) { return { columns: [], rows: [] }; }
+    var head = table[0].map(function (h, i) {
+      h = (h || '').trim();
+      return h || ('Column ' + (i + 1));
+    });
+    /* Duplicate headers are common in exports (two questions worded the same);
+       keep both rather than letting the second silently win. */
+    var seen = {};
+    head = head.map(function (h) {
+      if (seen[h]) { seen[h]++; return h + ' (' + seen[h] + ')'; }
+      seen[h] = 1; return h;
+    });
+    var out = [];
+    for (var r = 1; r < table.length; r++) {
+      var o = {}, any = false;
+      for (var c = 0; c < head.length; c++) {
+        var v = (table[r][c] || '').trim();
+        o[head[c]] = v;
+        if (v !== '') { any = true; }
+      }
+      if (any) { out.push(o); }
+    }
+    return { columns: head, rows: out };
+  }
+
+  /* ------------------------------------------------------------------ *
+   * reading whatever the API sends back
+   * ------------------------------------------------------------------ */
+
+  function isPlain(v) { return v && typeof v === 'object' && !Array.isArray(v); }
+
+  /* Checkout questions usually arrive as a list of {name, value} objects
+     rather than as columns. Left flat they become "fields.0.value", which is
+     useless to map; folded into their own question text they become the
+     columns a person actually recognises. */
+  function foldPairs(arr) {
+    var nameKeys = ['name', 'label', 'question', 'title', 'key', 'field', 'prompt'];
+    var valKeys = ['value', 'answer', 'response', 'text', 'val', 'content'];
+    var out = {}, hit = 0;
+    for (var i = 0; i < arr.length; i++) {
+      var o = arr[i];
+      if (!isPlain(o)) { return null; }
+      var nk = null, vk = null, k;
+      for (k = 0; k < nameKeys.length; k++) { if (typeof o[nameKeys[k]] === 'string') { nk = nameKeys[k]; break; } }
+      for (k = 0; k < valKeys.length; k++) { if (o[valKeys[k]] != null && !isPlain(o[valKeys[k]])) { vk = valKeys[k]; break; } }
+      if (!nk || !vk) { return null; }
+      var label = String(o[nk]).trim() || ('Answer ' + (i + 1));
+      out[label] = Array.isArray(o[vk]) ? o[vk].join(', ') : String(o[vk]);
+      hit++;
+    }
+    return hit ? out : null;
+  }
+
+  function flatten(obj, prefix, out, depth) {
+    out = out || {}; prefix = prefix || ''; depth = depth || 0;
+    if (depth > 4) { return out; }
+    Object.keys(obj).forEach(function (k) {
+      var v = obj[k], key = prefix ? prefix + '.' + k : k;
+      if (v == null) { out[key] = ''; return; }
+      if (Array.isArray(v)) {
+        if (!v.length) { out[key] = ''; return; }
+        var folded = isPlain(v[0]) ? foldPairs(v) : null;
+        if (folded) {
+          Object.keys(folded).forEach(function (fk) { out[prefix ? prefix + '.' + fk : fk] = folded[fk]; });
+          return;
+        }
+        if (!isPlain(v[0])) { out[key] = v.join(', '); return; }
+        v.slice(0, 10).forEach(function (item, i) { flatten(item, key + '.' + i, out, depth + 1); });
+        return;
+      }
+      if (isPlain(v)) { flatten(v, key, out, depth + 1); return; }
+      out[key] = String(v);
+    });
+    return out;
+  }
+
+  /* Every list of objects in the payload, so the page can offer them as
+     choices instead of guessing which one holds the orders.
+     A list of {name, value} answers is skipped: it sits inside a single
+     order and is folded into that order's columns, so offering it as the
+     record list would hand back one row per question instead of per gram. */
+  function findArrays(node, path, found, depth) {
+    found = found || []; depth = depth || 0;
+    if (depth > 5 || !node || typeof node !== 'object') { return found; }
+    if (Array.isArray(node)) {
+      if (node.length && isPlain(node[0]) && !foldPairs(node)) {
+        found.push({ path: path || '(top level)', arr: node, depth: depth });
+      }
+      node.slice(0, 3).forEach(function (n, i) { findArrays(n, path + '[' + i + ']', found, depth + 1); });
+      return found;
+    }
+    Object.keys(node).forEach(function (k) {
+      findArrays(node[k], path ? path + '.' + k : k, found, depth + 1);
+    });
+    return found;
+  }
+
+  function rowsFromRecords(records) {
+    var flat = records.map(function (r) { return flatten(r); });
+    var cols = [], seen = {};
+    flat.forEach(function (o) {
+      Object.keys(o).forEach(function (k) { if (!seen[k]) { seen[k] = 1; cols.push(k); } });
+    });
+    /* A column that is empty in every row is noise from the API, not a
+       question anybody asked. */
+    cols = cols.filter(function (k) {
+      return flat.some(function (o) { return (o[k] || '').trim() !== ''; });
+    });
+    return { columns: cols, rows: flat };
+  }
+
+  /* ------------------------------------------------------------------ *
+   * dates and ages
+   * ------------------------------------------------------------------ */
+  var MONTHS = ['january', 'february', 'march', 'april', 'may', 'june', 'july',
+                'august', 'september', 'october', 'november', 'december'];
+  var MONTH_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  var MONTH_LONG = ['January', 'February', 'March', 'April', 'May', 'June', 'July',
+                    'August', 'September', 'October', 'November', 'December'];
+
+  function fixYear(y) {
+    if (y >= 100) { return y; }
+    return y < 50 ? 2000 + y : 1900 + y;
+  }
+
+  function parseDate(raw) {
+    if (!raw) { return null; }
+    var s = String(raw).trim();
+    if (!s) { return null; }
+    var m;
+    if ((m = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/))) {
+      return valid(+m[1], +m[2], +m[3]);
+    }
+    if ((m = s.match(/^(\d{1,2})[\/.\-](\d{1,2})(?:[\/.\-](\d{2,4}))?/))) {
+      return valid(m[3] ? fixYear(+m[3]) : 0, +m[1], +m[2]);
+    }
+    if ((m = s.match(/^([A-Za-z]{3,})\.?\s+(\d{1,2})(?:\s*,?\s*(\d{2,4}))?/))) {
+      var mi = monthIndex(m[1]);
+      if (mi >= 0) { return valid(m[3] ? fixYear(+m[3]) : 0, mi + 1, +m[2]); }
+    }
+    if ((m = s.match(/^(\d{1,2})\s+([A-Za-z]{3,})\.?(?:\s+(\d{2,4}))?/))) {
+      var mj = monthIndex(m[2]);
+      if (mj >= 0) { return valid(m[3] ? fixYear(+m[3]) : 0, mj + 1, +m[1]); }
+    }
+    var t = Date.parse(s);
+    if (!isNaN(t)) { var d = new Date(t); return valid(d.getFullYear(), d.getMonth() + 1, d.getDate()); }
+    return null;
+  }
+  function monthIndex(name) {
+    var n = name.toLowerCase();
+    for (var i = 0; i < MONTHS.length; i++) {
+      if (MONTHS[i].indexOf(n) === 0 || n.indexOf(MONTHS[i].slice(0, 3)) === 0) { return i; }
+    }
+    return -1;
+  }
+  function valid(y, mo, d) {
+    if (mo < 1 || mo > 12 || d < 1 || d > 31) { return null; }
+    return { y: y, m: mo, d: d };
+  }
+
+  function formatDate(raw, fmt) {
+    if (fmt === 'raw') { return String(raw || ''); }
+    var p = parseDate(raw);
+    /* Whatever was typed into a date question that is not a date -- "not
+       sure", "ask mom" -- belongs nowhere near a printed card, so the line is
+       dropped instead. Asking for it as typed is the one way to override. */
+    if (!p) { return ''; }
+    switch (fmt) {
+      case 'longYear':   return MONTH_LONG[p.m - 1] + ' ' + p.d + (p.y ? ', ' + p.y : '');
+      case 'short':      return MONTH_SHORT[p.m - 1] + ' ' + p.d;
+      case 'numeric':    return p.m + '/' + p.d;
+      case 'numericYear':return p.m + '/' + p.d + (p.y ? '/' + p.y : '');
+      default:           return MONTH_LONG[p.m - 1] + ' ' + p.d;
+    }
+  }
+
+  function ageFrom(raw, mode) {
+    var b = parseDate(raw);
+    if (!b || !b.y) { return ''; }
+    var r = parseDate(S.refDate) || parseDate(todayISO());
+    var done = r.y - b.y;
+    var passed = (r.m > b.m) || (r.m === b.m && r.d >= b.d);
+    if (!passed) { done -= 1; }
+    var n = mode === 'now' ? done : (passed ? done : done + 1);
+    return n >= 0 && n < 130 ? String(n) : '';
+  }
+
+  /* ------------------------------------------------------------------ *
+   * turning rows into grams
+   * ------------------------------------------------------------------ */
+  var recCache = null;
+  function invalidate() { recCache = null; }
+
+  function records() {
+    if (recCache) { return recCache; }
+    var f = S.filter, needle = (f.val || '').toLowerCase();
+    var out = [];
+    S.rows.forEach(function (row) {
+      if (f.col && needle) {
+        if (String(row[f.col] || '').toLowerCase().indexOf(needle) < 0) { return; }
+      }
+      var n = 1;
+      if (S.map.qty) {
+        var q = parseInt(String(row[S.map.qty] || '1').replace(/[^0-9]/g, ''), 10);
+        if (q > 0 && q < 60) { n = q; }
+      }
+      for (var i = 0; i < n; i++) { out.push(row); }
+    });
+    recCache = out;
+    return out;
+  }
+
+  function kept() {
+    return records().filter(function (r, i) { return !S.skip[i]; });
+  }
+
+  function nameOf(row) {
+    return String((S.map.student && row[S.map.student]) || '').trim();
+  }
+
+  function rawValue(field, row) {
+    switch (field.source) {
+      case 'static':    return field.text;
+      case 'student':   return S.map.student ? row[S.map.student] : '';
+      case 'message':   return S.map.message ? row[S.map.message] : '';
+      case 'from':      return S.map.from ? row[S.map.from] : '';
+      case 'birthdate': return S.map.birthdate ? formatDate(row[S.map.birthdate], field.dateFmt) : '';
+      case 'age':       return S.map.birthdate ? ageFrom(row[S.map.birthdate], field.ageMode) : '';
+      default:          return '';
+    }
+  }
+
+  function valueFor(field, row) {
+    var v = String(rawValue(field, row) || '').trim();
+    /* An order that skipped a question leaves the whole line off the card,
+       rather than printing a stranded "Turning" or "From". */
+    if (field.source !== 'static' && v === '') { return ''; }
+    v = field.prefix + v + field.suffix;
+    return field.upper ? v.toUpperCase() : v;
+  }
+
+  /* ------------------------------------------------------------------ *
+   * guessing the mapping
+   * ------------------------------------------------------------------ */
+  var GUESS = {
+    student: [/\bstudent\b/i, /recipient/i, /\bchild\b/i, /birthday (kid|child|person|student)/i,
+              /who.*(gram|for)/i, /\bhonoree\b/i, /name of.*(student|child|recipient)/i],
+    message: [/message/i, /\bnote\b/i, /greeting/i, /personal/i, /what.*say/i, /\bwish(es)?\b/i],
+    from:    [/\bfrom\b/i, /sender/i, /signed/i, /\bby\b.*name/i, /payer name/i, /purchaser/i, /buyer/i, /billing name/i],
+    birthdate: [/birth ?date/i, /date of birth/i, /\bdob\b/i, /birthday/i],
+    qty:     [/^qty$/i, /quantity/i, /\bhow many\b/i]
+  };
+  /* "Payer Name" is a decent guess for From and a terrible one for Student,
+     so a column that looks like the buyer is never offered as the recipient. */
+  var NOT_STUDENT = [/payer/i, /purchaser/i, /buyer/i, /your name/i, /billing/i, /parent/i, /email/i];
+
+  function guessMap() {
+    var used = {};
+    Object.keys(GUESS).forEach(function (role) {
+      if (S.map[role] && S.columns.indexOf(S.map[role]) >= 0) { used[S.map[role]] = 1; return; }
+      var best = '';
+      for (var p = 0; p < GUESS[role].length && !best; p++) {
+        for (var c = 0; c < S.columns.length; c++) {
+          var col = S.columns[c];
+          if (used[col] || !GUESS[role][p].test(col)) { continue; }
+          if (role === 'student' && NOT_STUDENT.some(function (re) { return re.test(col); })) { continue; }
+          if (role === 'birthdate' && /message|gram|item/i.test(col)) { continue; }
+          best = col; break;
+        }
+      }
+      S.map[role] = best;
+      if (best) { used[best] = 1; }
+    });
+  }
+
+  /* ------------------------------------------------------------------ *
+   * drawing
+   * ------------------------------------------------------------------ */
+
+  function boxOf(field, W, H) {
+    return { x: field.x * W, y: field.y * H, w: field.w * W, h: field.h * H };
+  }
+
+  function fontString(field, px) {
+    return (field.italic ? 'italic ' : '') + field.weight + ' ' + px + 'px ' + field.font;
+  }
+
+  function wrap(ctx, text, maxW) {
+    var out = [];
+    String(text).split(/\n/).forEach(function (para) {
+      var words = para.split(/\s+/).filter(function (w) { return w !== ''; });
+      if (!words.length) { out.push(''); return; }
+      var line = words[0];
+      for (var i = 1; i < words.length; i++) {
+        var test = line + ' ' + words[i];
+        if (ctx.measureText(test).width <= maxW) { line = test; }
+        else { out.push(line); line = words[i]; }
+      }
+      out.push(line);
+    });
+    return out;
+  }
+
+  /* Longer notes are set smaller rather than spilling out of their box; the
+     search walks the size down until both the widest line and the stack of
+     lines fit what was drawn on screen. */
+  function fitText(ctx, text, field, box) {
+    var size = field.size * (field.__H || 1);
+    var min = Math.max(6, size * 0.28);
+    var lines, widest, total, guard = 0;
+    while (guard++ < 60) {
+      ctx.font = fontString(field, size);
+      lines = wrap(ctx, text, box.w);
+      widest = 0;
+      for (var i = 0; i < lines.length; i++) {
+        widest = Math.max(widest, ctx.measureText(lines[i]).width);
+      }
+      total = lines.length * size * field.line;
+      if (!field.shrink) { break; }
+      if ((widest <= box.w && total <= box.h) || size <= min) { break; }
+      size *= 0.94;
+    }
+    return { lines: lines, size: size, step: size * field.line };
+  }
+
+  function drawField(ctx, field, text, W, H) {
+    if (!text) { return null; }
+    var box = boxOf(field, W, H);
+    field.__H = H;
+    var fit = fitText(ctx, text, field, box);
+    var block = fit.lines.length * fit.step;
+
+    var top = box.y;
+    if (field.valign === 'middle') { top = box.y + (box.h - block) / 2; }
+    else if (field.valign === 'bottom') { top = box.y + box.h - block; }
+
+    var anchor = box.x;
+    if (field.align === 'center') { anchor = box.x + box.w / 2; }
+    else if (field.align === 'right') { anchor = box.x + box.w; }
+
+    ctx.save();
+    ctx.font = fontString(field, fit.size);
+    ctx.textAlign = field.align === 'center' ? 'center' : (field.align === 'right' ? 'right' : 'left');
+    ctx.textBaseline = 'alphabetic';
+    if (field.shadow) {
+      ctx.shadowColor = 'rgba(0,0,0,.34)';
+      ctx.shadowBlur = fit.size * 0.14;
+      ctx.shadowOffsetY = fit.size * 0.06;
+    }
+    /* The outline is stroked under the fill so the letter shapes stay crisp
+       at the edges instead of being eaten into by half the stroke width. */
+    for (var i = 0; i < fit.lines.length; i++) {
+      var baseline = top + fit.step * i + fit.size * 0.80;
+      if (field.outline) {
+        ctx.lineWidth = field.outlineWidth * (H / 1000);
+        ctx.strokeStyle = field.outlineColor;
+        ctx.lineJoin = 'round';
+        ctx.miterLimit = 2;
+        ctx.strokeText(fit.lines[i], anchor, baseline);
+      }
+      ctx.shadowColor = field.shadow && !field.outline ? 'rgba(0,0,0,.34)' : 'transparent';
+      ctx.fillStyle = field.color;
+      ctx.fillText(fit.lines[i], anchor, baseline);
+    }
+    ctx.restore();
+    return fit;
+  }
+
+  function paint(ctx, row, W, H) {
+    ctx.clearRect(0, 0, W, H);
+    if (S.art) { ctx.drawImage(S.art.img, 0, 0, W, H); }
+    else { ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, W, H); }
+    S.fields.forEach(function (f) {
+      if (!f.visible) { return; }
+      drawField(ctx, f, row ? valueFor(f, row) : placeholder(f), W, H);
+    });
+  }
+
+  function placeholder(f) {
+    var demo = { student: 'Avery Nakamura', message: 'Happy birthday! Hope your day is the best one yet.',
+                 from: 'Mrs. Delgado’s class', birthdate: 'March 14', age: '10', static: f.text };
+    var v = demo[f.source] || '';
+    if (f.source === 'static') { return f.upper ? String(v).toUpperCase() : String(v); }
+    v = f.prefix + v + f.suffix;
+    return f.upper ? v.toUpperCase() : v;
+  }
+
+  /* ------------------------------------------------------------------ *
+   * the preview: sizing, selection chrome, dragging
+   * ------------------------------------------------------------------ */
+  var canvas = $('canvas'), ctx = canvas.getContext('2d');
+  var viewScale = 1;
+
+  function currentRow() {
+    var recs = records();
+    if (!recs.length) { return null; }
+    S.idx = clamp(S.idx, 0, recs.length - 1);
+    return recs[S.idx];
+  }
+
+  function computeScale(W, H) {
+    if (S.zoom !== 'fit') { return parseFloat(S.zoom); }
+    var stage = $('stage');
+    var availW = Math.max(120, stage.clientWidth - 44);
+    var availH = Math.max(120, stage.clientHeight - 44);
+    return Math.min(availW / W, availH / H, 1);
+  }
+
+  function render() {
+    var has = !!S.art;
+    $('empty').hidden = has;
+    $('sheet').hidden = !has;
+    if (!has) { return; }
+
+    var W = S.art.w, H = S.art.h;
+    viewScale = computeScale(W, H);
+    var cssW = Math.max(1, Math.round(W * viewScale));
+    var cssH = Math.max(1, Math.round(H * viewScale));
+    var dpr = Math.min(window.devicePixelRatio || 1, 2);
+
+    canvas.width = Math.round(cssW * dpr);
+    canvas.height = Math.round(cssH * dpr);
+    canvas.style.width = cssW + 'px';
+    canvas.style.height = cssH + 'px';
+
+    ctx.setTransform(viewScale * dpr, 0, 0, viewScale * dpr, 0, 0);
+    paint(ctx, currentRow(), W, H);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    drawChrome(cssW, cssH);
+  }
+
+  var HANDLE = 9;
+  function drawChrome(cssW, cssH) {
+    if (!S.guides) { return; }
+    ctx.save();
+    S.fields.forEach(function (f) {
+      if (!f.visible) { return; }
+      var sel = S.sel === f.id;
+      var x = f.x * cssW, y = f.y * cssH, w = f.w * cssW, h = f.h * cssH;
+      ctx.setLineDash(sel ? [] : [3, 4]);
+      ctx.lineWidth = sel ? 1.5 : 1;
+      ctx.strokeStyle = sel ? '#d8214b' : 'rgba(23,34,48,.22)';
+      ctx.strokeRect(x + .5, y + .5, w, h);
+      if (!sel) { return; }
+      ctx.setLineDash([]);
+      [[x, y], [x + w, y], [x, y + h], [x + w, y + h]].forEach(function (p) {
+        ctx.fillStyle = '#fff';
+        ctx.strokeStyle = '#d8214b';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.rect(p[0] - HANDLE / 2, p[1] - HANDLE / 2, HANDLE, HANDLE);
+        ctx.fill(); ctx.stroke();
+      });
+    });
+    ctx.restore();
+  }
+
+  function pointIn(px, py, cssW, cssH) {
+    /* Handles of the selected field win over any box, and later fields win
+       over earlier ones, so the thing drawn on top is the thing you grab. */
+    var order = S.fields.filter(function (f) { return f.visible; });
+    var sel = order.filter(function (f) { return f.id === S.sel; })[0];
+    if (sel) {
+      var x = sel.x * cssW, y = sel.y * cssH, w = sel.w * cssW, h = sel.h * cssH;
+      var corners = { nw: [x, y], ne: [x + w, y], sw: [x, y + h], se: [x + w, y + h] };
+      for (var k in corners) {
+        if (Math.abs(px - corners[k][0]) <= HANDLE && Math.abs(py - corners[k][1]) <= HANDLE) {
+          return { field: sel, mode: k };
+        }
+      }
+    }
+    for (var i = order.length - 1; i >= 0; i--) {
+      var f = order[i];
+      if (px >= f.x * cssW && px <= (f.x + f.w) * cssW &&
+          py >= f.y * cssH && py <= (f.y + f.h) * cssH) {
+        return { field: f, mode: 'move' };
+      }
+    }
+    return null;
+  }
+
+  var drag = null;
+  canvas.addEventListener('pointerdown', function (e) {
+    if (!S.art) { return; }
+    var r = canvas.getBoundingClientRect();
+    var px = e.clientX - r.left, py = e.clientY - r.top;
+    var hit = pointIn(px, py, r.width, r.height);
+    if (!hit) { select(null); render(); return; }
+    select(hit.field.id);
+    drag = {
+      mode: hit.mode, f: hit.field, w: r.width, h: r.height,
+      px: px, py: py, ox: hit.field.x, oy: hit.field.y, ow: hit.field.w, oh: hit.field.h
+    };
+    canvas.setPointerCapture(e.pointerId);
+    e.preventDefault();
+    render();
+  });
+
+  canvas.addEventListener('pointermove', function (e) {
+    var r = canvas.getBoundingClientRect();
+    if (!drag) {
+      if (!S.art) { return; }
+      var hit = pointIn(e.clientX - r.left, e.clientY - r.top, r.width, r.height);
+      canvas.style.cursor = !hit ? 'default'
+        : hit.mode === 'move' ? 'move'
+        : (hit.mode === 'nw' || hit.mode === 'se') ? 'nwse-resize' : 'nesw-resize';
+      return;
+    }
+    var dx = (e.clientX - r.left - drag.px) / drag.w;
+    var dy = (e.clientY - r.top - drag.py) / drag.h;
+    var f = drag.f;
+    if (drag.mode === 'move') {
+      if (e.shiftKey) { if (Math.abs(dx) > Math.abs(dy)) { dy = 0; } else { dx = 0; } }
+      f.x = clamp(drag.ox + dx, -0.5, 1.5);
+      f.y = clamp(drag.oy + dy, -0.5, 1.5);
+      /* A card is almost always laid out around its middle, so the box
+         snaps there when it comes close rather than landing a pixel off. */
+      var mid = f.x + f.w / 2;
+      if (Math.abs(mid - 0.5) < 0.008) { f.x = 0.5 - f.w / 2; }
+    } else {
+      var minW = 0.03, minH = 0.015;
+      if (drag.mode === 'nw' || drag.mode === 'sw') {
+        f.w = Math.max(minW, drag.ow - dx);
+        f.x = drag.ox + (drag.ow - f.w);
+      } else {
+        f.w = Math.max(minW, drag.ow + dx);
+      }
+      if (drag.mode === 'nw' || drag.mode === 'ne') {
+        f.h = Math.max(minH, drag.oh - dy);
+        f.y = drag.oy + (drag.oh - f.h);
+      } else {
+        f.h = Math.max(minH, drag.oh + dy);
+      }
+    }
+    render();
+  });
+
+  function endDrag(e) {
+    if (!drag) { return; }
+    drag = null;
+    if (e && e.pointerId != null && canvas.hasPointerCapture(e.pointerId)) {
+      canvas.releasePointerCapture(e.pointerId);
+    }
+    persist();
+  }
+  canvas.addEventListener('pointerup', endDrag);
+  canvas.addEventListener('pointercancel', endDrag);
+
+  document.addEventListener('keydown', function (e) {
+    if (!S.sel || !S.art) { return; }
+    var t = e.target.tagName;
+    if (t === 'INPUT' || t === 'TEXTAREA' || t === 'SELECT') { return; }
+    var f = fieldById(S.sel);
+    if (!f) { return; }
+    if (e.key === 'Delete' || e.key === 'Backspace') {
+      if (f.source === 'static') { removeField(f.id); e.preventDefault(); }
+      return;
+    }
+    var step = e.shiftKey ? 10 : 1;
+    var dx = 0, dy = 0;
+    if (e.key === 'ArrowLeft') { dx = -step; }
+    else if (e.key === 'ArrowRight') { dx = step; }
+    else if (e.key === 'ArrowUp') { dy = -step; }
+    else if (e.key === 'ArrowDown') { dy = step; }
+    else { return; }
+    e.preventDefault();
+    f.x = clamp(f.x + dx / S.art.w, -0.5, 1.5);
+    f.y = clamp(f.y + dy / S.art.h, -0.5, 1.5);
+    render();
+    persist();
+  });
+
+  /* ------------------------------------------------------------------ *
+   * panels
+   * ------------------------------------------------------------------ */
+  function fieldById(id) {
+    return S.fields.filter(function (f) { return f.id === id; })[0] || null;
+  }
+
+  function select(id) {
+    S.sel = id;
+    renderFieldList();
+    syncProps();
+  }
+
+  function removeField(id) {
+    S.fields = S.fields.filter(function (f) { return f.id !== id; });
+    if (S.sel === id) { S.sel = null; }
+    renderFieldList(); syncProps(); render(); persist();
+  }
+
+  var SOURCE_LABEL = {
+    student: 'Student name', message: 'Message', from: 'From',
+    birthdate: 'Birthdate', age: 'Age', static: 'Fixed text'
+  };
+
+  function renderFieldList() {
+    var host = $('flist');
+    host.textContent = '';
+    S.fields.forEach(function (f) {
+      var row = document.createElement('div');
+      row.className = 'frow' + (f.visible ? '' : ' off');
+      row.setAttribute('aria-current', S.sel === f.id ? 'true' : 'false');
+
+      var sw = document.createElement('span');
+      sw.className = 'swatch';
+      sw.style.background = f.color;
+
+      var nm = document.createElement('span');
+      nm.className = 'nm';
+      nm.textContent = f.source === 'static' ? (f.text || 'Fixed text') : SOURCE_LABEL[f.source];
+
+      var eye = document.createElement('button');
+      eye.type = 'button';
+      eye.className = 'eye';
+      eye.textContent = f.visible ? '●' : '○';
+      eye.title = f.visible ? 'Hide on the card' : 'Show on the card';
+      eye.setAttribute('aria-label', eye.title);
+      eye.addEventListener('click', function (e) {
+        e.stopPropagation();
+        f.visible = !f.visible;
+        renderFieldList(); render(); persist();
+      });
+
+      row.appendChild(sw); row.appendChild(nm); row.appendChild(eye);
+      row.addEventListener('click', function () { select(f.id); render(); });
+      host.appendChild(row);
+    });
+  }
+
+  var PROPS = ['pText', 'pFont', 'pSize', 'pWeight', 'pColor', 'pAlign', 'pValign', 'pItalic',
+               'pUpper', 'pLine', 'pShrink', 'pOutline', 'pOutlineColor', 'pOutlineWidth',
+               'pShadow', 'pDateFmt', 'pAgeMode', 'pPrefix', 'pSuffix'];
+
+  function syncProps() {
+    var f = fieldById(S.sel);
+    $('propSec').hidden = !f;
+    if (!f) { return; }
+    $('propTitle').textContent = f.source === 'static' ? 'Fixed text' : SOURCE_LABEL[f.source];
+    $('staticWrap').hidden = f.source !== 'static';
+    $('dateWrap').hidden = f.source !== 'birthdate';
+    $('ageWrap').hidden = f.source !== 'age';
+    $('delField').hidden = f.source !== 'static';
+    $('outlineRow').hidden = !f.outline;
+
+    $('pText').value = f.text;
+    $('pFont').value = f.font;
+    $('pSize').value = S.art ? Math.round(f.size * S.art.h) : Math.round(f.size * 1000);
+    $('pWeight').value = f.weight;
+    $('pColor').value = f.color;
+    $('pAlign').value = f.align;
+    $('pValign').value = f.valign;
+    $('pItalic').checked = f.italic;
+    $('pUpper').checked = f.upper;
+    $('pLine').value = f.line;
+    $('pLineVal').textContent = Number(f.line).toFixed(2);
+    $('pShrink').checked = f.shrink;
+    $('pOutline').checked = f.outline;
+    $('pOutlineColor').value = f.outlineColor;
+    $('pOutlineWidth').value = f.outlineWidth;
+    $('pShadow').checked = f.shadow;
+    $('pDateFmt').value = f.dateFmt;
+    $('pAgeMode').value = f.ageMode;
+    $('pPrefix').value = f.prefix;
+    $('pSuffix').value = f.suffix;
+  }
+
+  function readProps() {
+    var f = fieldById(S.sel);
+    if (!f) { return; }
+    f.text = $('pText').value;
+    f.font = $('pFont').value;
+    var px = parseFloat($('pSize').value);
+    if (px > 0) { f.size = px / (S.art ? S.art.h : 1000); }
+    f.weight = $('pWeight').value;
+    f.color = $('pColor').value;
+    f.align = $('pAlign').value;
+    f.valign = $('pValign').value;
+    f.italic = $('pItalic').checked;
+    f.upper = $('pUpper').checked;
+    f.line = parseFloat($('pLine').value) || 1.2;
+    f.shrink = $('pShrink').checked;
+    f.outline = $('pOutline').checked;
+    f.outlineColor = $('pOutlineColor').value;
+    f.outlineWidth = parseFloat($('pOutlineWidth').value) || 6;
+    f.shadow = $('pShadow').checked;
+    f.dateFmt = $('pDateFmt').value;
+    f.ageMode = $('pAgeMode').value;
+    f.prefix = $('pPrefix').value;
+    f.suffix = $('pSuffix').value;
+    $('pLineVal').textContent = Number(f.line).toFixed(2);
+    $('outlineRow').hidden = !f.outline;
+    renderFieldList();
+    render();
+    persist();
+  }
+  PROPS.forEach(function (id) {
+    var el = $(id);
+    el.addEventListener('input', readProps);
+    el.addEventListener('change', readProps);
+  });
+  $('delField').addEventListener('click', function () { if (S.sel) { removeField(S.sel); } });
+  $('addField').addEventListener('click', function () {
+    var f = mk('static', 'Fixed text', { y: .06, h: .07, size: .04, text: 'Happy Birthday!' });
+    S.fields.push(f);
+    select(f.id);
+    render(); persist();
+  });
+
+  /* ---- mapping ---- */
+  var ROLES = [
+    ['student', 'Student'], ['message', 'Message'], ['from', 'From'],
+    ['birthdate', 'Birthdate'], ['qty', 'Quantity']
+  ];
+
+  function renderMap() {
+    var host = $('mapRows');
+    host.textContent = '';
+    ROLES.forEach(function (r) {
+      var lab = document.createElement('label');
+      lab.textContent = r[1];
+      lab.setAttribute('for', 'map-' + r[0]);
+      var sel = columnSelect('map-' + r[0], S.map[r[0]], r[0] === 'qty' ? 'one per row' : 'not used');
+      sel.addEventListener('change', function () {
+        S.map[r[0]] = sel.value;
+        invalidate(); refresh(); persist();
+      });
+      host.appendChild(lab);
+      host.appendChild(sel);
+    });
+
+    var fc = $('filterCol');
+    fc.textContent = '';
+    fc.appendChild(opt('', 'every row'));
+    S.columns.forEach(function (c) { fc.appendChild(opt(c, c)); });
+    fc.value = S.filter.col;
+    $('filterVal').value = S.filter.val;
+    updateMapHint();
+  }
+
+  function columnSelect(id, value, emptyLabel) {
+    var sel = document.createElement('select');
+    sel.id = id;
+    sel.appendChild(opt('', emptyLabel));
+    S.columns.forEach(function (c) { sel.appendChild(opt(c, c)); });
+    sel.value = value || '';
+    return sel;
+  }
+  function opt(v, label) {
+    var o = document.createElement('option');
+    o.value = v; o.textContent = label;
+    return o;
+  }
+
+  function updateMapHint() {
+    var recs = records();
+    var missing = [];
+    if (!S.map.student) { missing.push('student'); }
+    if (!S.map.message) { missing.push('message'); }
+    if (!S.map.from) { missing.push('from'); }
+    if (!S.map.birthdate) { missing.push('birthdate'); }
+    var hint = $('mapHint');
+    if (missing.length) {
+      hint.className = 'hint alert';
+      hint.textContent = 'Nothing chosen for: ' + missing.join(', ') + '. Those lines stay blank on the card.';
+      return;
+    }
+    var bad = 0;
+    recs.forEach(function (r) { if (!parseDate(r[S.map.birthdate])) { bad++; } });
+    hint.className = 'hint' + (bad ? ' alert' : '');
+    hint.textContent = bad
+      ? bad + ' of ' + recs.length + ' rows have a birthdate this page cannot read, so their age is left off.'
+      : 'All ' + recs.length + ' rows read cleanly.';
+  }
+
+  $('filterCol').addEventListener('change', function () {
+    S.filter.col = this.value; invalidate(); refresh(); persist();
+  });
+  $('filterVal').addEventListener('input', function () {
+    S.filter.val = this.value; invalidate(); refresh(); persist();
+  });
+
+  /* ---- the gram list ---- */
+  function renderGrams() {
+    var recs = records();
+    var host = $('grams');
+    host.textContent = '';
+    $('gramCount').textContent = recs.length ? '(' + kept().length + ' of ' + recs.length + ')' : '';
+    recs.forEach(function (row, i) {
+      var b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'gram' + (S.skip[i] ? ' skip' : '');
+      b.setAttribute('aria-current', i === S.idx ? 'true' : 'false');
+
+      var n = document.createElement('span');
+      n.className = 'n';
+      n.textContent = pad2(i + 1);
+      n.title = S.skip[i] ? 'Put this one back in' : 'Leave this one out';
+      n.addEventListener('click', function (e) {
+        e.stopPropagation();
+        if (S.skip[i]) { delete S.skip[i]; } else { S.skip[i] = true; }
+        renderGrams(); updateButtons();
+      });
+
+      var who = document.createElement('span');
+      who.className = 'who';
+      who.textContent = nameOf(row) || '(no name)';
+
+      b.appendChild(n); b.appendChild(who);
+      b.addEventListener('click', function () { S.idx = i; refreshPreview(); });
+      host.appendChild(b);
+    });
+  }
+
+  function refreshPreview() {
+    var recs = records();
+    $('gramLabel').textContent = recs.length
+      ? (S.idx + 1) + ' of ' + recs.length + (nameOf(recs[S.idx]) ? ' · ' + nameOf(recs[S.idx]) : '')
+      : (S.art ? 'Sample text — no orders loaded' : 'No orders loaded');
+    $('prevGram').disabled = S.idx <= 0;
+    $('nextGram').disabled = S.idx >= recs.length - 1;
+    renderGrams();
+    render();
+    updateButtons();
+  }
+
+  function updateButtons() {
+    var ready = !!S.art && kept().length > 0;
+    $('saveAll').disabled = !ready;
+    $('savePng').disabled = !S.art || !records().length;
+  }
+
+  function refresh() {
+    var has = S.columns.length > 0;
+    $('mapSec').hidden = !has;
+    $('listSec').hidden = !has;
+    if (has) { renderMap(); }
+    refreshPreview();
+  }
+
+  $('prevGram').addEventListener('click', function () { S.idx--; refreshPreview(); });
+  $('nextGram').addEventListener('click', function () { S.idx++; refreshPreview(); });
+  $('zoom').addEventListener('change', function () { S.zoom = this.value; render(); });
+  $('guides').addEventListener('change', function () { S.guides = this.checked; render(); persist(); });
+  $('refDate').addEventListener('change', function () {
+    S.refDate = this.value || todayISO();
+    updateMapHint(); render(); persist();
+  });
+
+  /* ------------------------------------------------------------------ *
+   * loading files
+   * ------------------------------------------------------------------ */
+  function wireDrop(dropId, inputId, accept, handler) {
+    var drop = $(dropId), input = $(inputId);
+    drop.addEventListener('click', function () { input.click(); });
+    drop.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); input.click(); }
+    });
+    input.addEventListener('change', function () {
+      if (input.files && input.files[0]) { handler(input.files[0]); }
+      input.value = '';
+    });
+    ['dragenter', 'dragover'].forEach(function (t) {
+      drop.addEventListener(t, function (e) { e.preventDefault(); drop.classList.add('over'); });
+    });
+    ['dragleave', 'drop'].forEach(function (t) {
+      drop.addEventListener(t, function (e) { e.preventDefault(); drop.classList.remove('over'); });
+    });
+    drop.addEventListener('drop', function (e) {
+      var f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+      if (f) { handler(f); }
+    });
+  }
+
+  function readAs(file, how) {
+    return new Promise(function (resolve, reject) {
+      var fr = new FileReader();
+      fr.onload = function () { resolve(fr.result); };
+      fr.onerror = function () { reject(new Error('Could not read ' + file.name)); };
+      if (how === 'text') { fr.readAsText(file); } else { fr.readAsDataURL(file); }
+    });
+  }
+
+  function setArt(dataUrl, name) {
+    return new Promise(function (resolve, reject) {
+      var img = new Image();
+      img.onload = function () {
+        S.art = { img: img, w: img.naturalWidth, h: img.naturalHeight, name: name || 'card', src: dataUrl };
+        var drop = $('artDrop');
+        drop.classList.add('has');
+        drop.textContent = '';
+        var strong = document.createElement('strong');
+        strong.textContent = name || 'Card artwork';
+        var dims = document.createElement('span');
+        dims.className = 'filename';
+        dims.textContent = S.art.w + ' × ' + S.art.h + ' px · click to replace';
+        drop.appendChild(strong); drop.appendChild(dims);
+        syncProps();
+        resolve();
+      };
+      img.onerror = function () { reject(new Error('That file did not open as an image.')); };
+      img.src = dataUrl;
+    });
+  }
+
+  wireDrop('artDrop', 'artFile', 'image/*', function (file) {
+    if (!/^image\//.test(file.type)) { say('That is not an image file.', 'warn'); return; }
+    say('Opening the artwork…', 'busy');
+    readAs(file, 'dataurl')
+      .then(function (url) { return setArt(url, file.name); })
+      .then(function () { render(); updateButtons(); persist(); say('Artwork loaded.', 'good'); })
+      .catch(function (e) { say(e.message, 'warn'); });
+  });
+
+  function adoptTable(res, what) {
+    if (!res.rows.length) { say('No rows found in ' + what + '.', 'warn'); return; }
+    S.columns = res.columns;
+    S.rows = res.rows;
+    S.skip = {};
+    S.idx = 0;
+    guessMap();
+    invalidate();
+    refresh();
+    persist();
+    say(res.rows.length + ' rows read from ' + what + '.', 'good');
+  }
+
+  wireDrop('csvDrop', 'csvFile', '.csv', function (file) {
+    if (/\.xlsx?$/i.test(file.name)) {
+      say('Excel files cannot be read here — open it and Save as CSV first.', 'warn');
+      return;
+    }
+    say('Reading ' + file.name + '…', 'busy');
+    readAs(file, 'text').then(function (text) {
+      var table = parseDelimited(text, sniffDelimiter(text));
+      adoptTable(rowsFromTable(table), file.name);
+      var drop = $('csvDrop');
+      drop.classList.add('has');
+      drop.textContent = '';
+      var strong = document.createElement('strong');
+      strong.textContent = file.name;
+      var meta = document.createElement('span');
+      meta.className = 'filename';
+      meta.textContent = S.rows.length + ' rows · ' + S.columns.length + ' columns · click to replace';
+      drop.appendChild(strong); drop.appendChild(meta);
+    }).catch(function (e) { say(e.message, 'warn'); });
+  });
+
+  /* ------------------------------------------------------------------ *
+   * the Cheddar Up panel
+   * ------------------------------------------------------------------ */
+  var apiFound = [], apiPicked = null;
+
+  function setSource(which) {
+    S.source = which;
+    $('paneCsv').hidden = which !== 'csv';
+    $('paneApi').hidden = which !== 'api';
+    $('tabCsv').setAttribute('aria-pressed', String(which === 'csv'));
+    $('tabApi').setAttribute('aria-pressed', String(which === 'api'));
+    $('tabCsv').classList.toggle('primary', which === 'csv');
+    $('tabApi').classList.toggle('primary', which === 'api');
+  }
+  $('tabCsv').addEventListener('click', function () { setSource('csv'); });
+  $('tabApi').addEventListener('click', function () { setSource('api'); });
+
+  function proxyUrl(params) {
+    var base = ($('apiBase').value || 'cheddar.php').trim();
+    var token = $('apiToken').value;
+    var q = [];
+    Object.keys(params).forEach(function (k) {
+      q.push(encodeURIComponent(k) + '=' + encodeURIComponent(params[k]));
+    });
+    if (token) { q.push('token=' + encodeURIComponent(token)); }
+    return base + (base.indexOf('?') < 0 ? '?' : '&') + q.join('&');
+  }
+
+  function askProxy(params) {
+    return fetch(proxyUrl(params), { credentials: 'same-origin' }).then(function (res) {
+      return res.text().then(function (body) {
+        var data = null;
+        try { data = JSON.parse(body); } catch (e) { /* left as null below */ }
+        if (data === null) {
+          throw new Error('The server sent back something that is not JSON. Is ' +
+            ($('apiBase').value || 'cheddar.php') + ' really there, and is PHP running?');
+        }
+        if (!res.ok) {
+          throw new Error(explain(data, res.status));
+        }
+        return data;
+      });
+    }, function () {
+      throw new Error('Could not reach ' + ($('apiBase').value || 'cheddar.php') +
+        '. Check that it sits in the same folder as this page.');
+    });
+  }
+
+  function explain(data, status) {
+    var e = data && data.error;
+    if (e === 'no_config') { return 'config.php is missing on the server. Copy config.sample.php to config.php.'; }
+    if (e === 'no_key') { return 'config.php has no API key in it yet.'; }
+    if (e === 'bad_token') { return 'That access password does not match the one in config.php.'; }
+    if (e === 'no_curl') { return 'The server has no PHP cURL extension, so it cannot call Cheddar Up.'; }
+    if (e === 'upstream_unreachable') { return 'The server could not reach Cheddar Up: ' + (data.detail || ''); }
+    if (e === 'not_json') {
+      return 'Cheddar Up answered with ' + data.upstream_status + ' and a ' + (data.content_type || 'non-JSON') +
+             ' page rather than data. That usually means the endpoint path is wrong.';
+    }
+    if (status === 401 || status === 403) {
+      return 'Cheddar Up refused the key (' + status + '). Try a different auth_style in config.php — ' +
+             'bearer, token, x-api-key, basic or query.';
+    }
+    if (status === 404) { return 'Cheddar Up has nothing at that path (404).'; }
+    return 'Cheddar Up answered ' + status + (data && data.message ? ': ' + data.message : '.');
+  }
+
+  $('apiProbe').addEventListener('click', function () {
+    say('Checking the proxy…', 'busy');
+    askProxy({ probe: 1 }).then(function (d) {
+      var notes = [];
+      if (!d.curl) { notes.push('no PHP cURL extension'); }
+      if (!d.key_set) { notes.push('no API key in config.php'); }
+      if (!d.token_required) { notes.push('no access password set — anyone who finds this URL can use it'); }
+      showPeek(d);
+      if (notes.length) { say('Proxy reachable, but: ' + notes.join('; '), 'warn'); }
+      else { say('Proxy is set up: PHP ' + d.php + ', key ending ' + d.key_tail + ', ' + d.auth_style + ' auth.', 'good'); }
+    }).catch(function (e) { say(e.message, 'warn'); });
+  });
+
+  function showPeek(data) {
+    var peek = $('apiPeek');
+    var text = JSON.stringify(data, null, 1);
+    peek.hidden = false;
+    peek.textContent = text.length > 20000 ? text.slice(0, 20000) + '\n…' : text;
+  }
+
+  $('apiGo').addEventListener('click', function () {
+    var path = ($('apiPath').value || '/').trim();
+    say('Asking Cheddar Up for ' + path + '…', 'busy');
+    $('apiUse').disabled = true;
+    askProxy({ path: path }).then(function (data) {
+      showPeek(data);
+      apiFound = findArrays(data, '');
+      apiPicked = null;
+      var crumbs = $('apiCrumbs');
+      crumbs.textContent = '';
+      if (!apiFound.length) {
+        say('That answered, but there is no list of records in it. Follow an id into a deeper path.', 'warn');
+        return;
+      }
+      apiFound.sort(function (a, b) {
+        return (a.depth - b.depth) || (b.arr.length - a.arr.length);
+      });
+      apiFound.slice(0, 8).forEach(function (cand, i) {
+        var b = document.createElement('button');
+        b.type = 'button';
+        b.textContent = cand.path + ' · ' + cand.arr.length;
+        b.addEventListener('click', function () {
+          apiPicked = cand;
+          $('apiUse').disabled = false;
+          Array.prototype.forEach.call(crumbs.children, function (c) { c.style.borderColor = ''; });
+          b.style.borderColor = '#d8214b';
+          showPeek(cand.arr.slice(0, 2));
+          say('Picked ' + cand.path + ' (' + cand.arr.length + ' records). Now press "Use these rows".');
+        });
+        crumbs.appendChild(b);
+        if (i === 0) { apiPicked = cand; $('apiUse').disabled = false; b.style.borderColor = '#d8214b'; }
+      });
+      say(apiFound.length + ' list' + (apiFound.length > 1 ? 's' : '') + ' found. Using ' +
+          apiFound[0].path + ', with ' + apiFound[0].arr.length + ' records.', 'good');
+    }).catch(function (e) { say(e.message, 'warn'); });
+  });
+
+  $('apiUse').addEventListener('click', function () {
+    if (!apiPicked) { return; }
+    adoptTable(rowsFromRecords(apiPicked.arr), 'Cheddar Up (' + apiPicked.path + ')');
+  });
+
+  /* ------------------------------------------------------------------ *
+   * saving pictures
+   * ------------------------------------------------------------------ */
+  function series(items, step) {
+    var i = 0;
+    return new Promise(function (resolve, reject) {
+      (function next() {
+        if (i >= items.length) { resolve(); return; }
+        var k = i++;
+        Promise.resolve(step(items[k], k)).then(next, reject);
+      })();
+    });
+  }
+
+  var outCanvas = document.createElement('canvas');
+  function renderFull(row) {
+    outCanvas.width = S.art.w;
+    outCanvas.height = S.art.h;
+    var c = outCanvas.getContext('2d');
+    c.setTransform(1, 0, 0, 1, 0, 0);
+    paint(c, row, S.art.w, S.art.h);
+    return outCanvas;
+  }
+
+  function blobOf(c) {
+    return new Promise(function (resolve, reject) {
+      c.toBlob(function (b) {
+        b ? resolve(b) : reject(new Error('The browser could not turn the card into a PNG.'));
+      }, 'image/png');
+    });
+  }
+
+  function safeName(s) {
+    return String(s || '').replace(/[^\w\s.\-]/g, '').trim().replace(/\s+/g, '-')
+      .replace(/-{2,}/g, '-').replace(/^[.\-]+|[.\-]+$/g, '').slice(0, 60);
+  }
+
+  function fileNames(rows) {
+    var style = $('outName').value, seen = {}, out = [];
+    rows.forEach(function (r, i) {
+      var num = pad2(i + 1);
+      var who = safeName(nameOf(r.row)) || 'gram';
+      var base = style === 'numbered' ? num : (style === 'both' ? num + '-' + who : who);
+      if (seen[base]) { seen[base]++; base = base + '-' + seen[base]; } else { seen[base] = 1; }
+      out.push(base + '.png');
+    });
+    return out;
+  }
+
+  function download(blob, name) {
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url; a.download = name;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(function () { URL.revokeObjectURL(url); }, 40000);
+  }
+
+  /* ---- a store-only zip, written by hand ----
+     PNG data is already compressed, so deflating it again buys nothing. That
+     lets the archive be assembled from Blob parts: each picture is read once
+     to take its checksum and then handed to the Blob untouched, so only one
+     card is ever held in memory rather than the whole batch. */
+  var CRC_TABLE = (function () {
+    var t = new Uint32Array(256);
+    for (var n = 0; n < 256; n++) {
+      var c = n;
+      for (var k = 0; k < 8; k++) { c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1); }
+      t[n] = c >>> 0;
+    }
+    return t;
+  })();
+  function crc32(u8) {
+    var c = 0xFFFFFFFF;
+    for (var i = 0; i < u8.length; i++) { c = CRC_TABLE[(c ^ u8[i]) & 0xFF] ^ (c >>> 8); }
+    return (c ^ 0xFFFFFFFF) >>> 0;
+  }
+
+  function dosStamp() {
+    var d = new Date();
+    return {
+      time: (d.getHours() << 11) | (d.getMinutes() << 5) | (d.getSeconds() >> 1),
+      date: ((d.getFullYear() - 1980) << 9) | ((d.getMonth() + 1) << 5) | d.getDate()
+    };
+  }
+
+  function buildZip(entries) {
+    var stamp = dosStamp();
+    var parts = [], central = [], offset = 0;
+    var enc = new TextEncoder();
+
+    entries.forEach(function (e) {
+      var name = enc.encode(e.name);
+      var lh = new DataView(new ArrayBuffer(30 + name.length));
+      lh.setUint32(0, 0x04034b50, true);
+      lh.setUint16(4, 20, true);
+      lh.setUint16(6, 0x0800, true);   /* names are UTF-8 */
+      lh.setUint16(8, 0, true);        /* stored, not deflated */
+      lh.setUint16(10, stamp.time, true);
+      lh.setUint16(12, stamp.date, true);
+      lh.setUint32(14, e.crc, true);
+      lh.setUint32(18, e.size, true);
+      lh.setUint32(22, e.size, true);
+      lh.setUint16(26, name.length, true);
+      lh.setUint16(28, 0, true);
+      new Uint8Array(lh.buffer).set(name, 30);
+      parts.push(lh.buffer, e.blob);
+
+      var ch = new DataView(new ArrayBuffer(46 + name.length));
+      ch.setUint32(0, 0x02014b50, true);
+      ch.setUint16(4, 20, true);
+      ch.setUint16(6, 20, true);
+      ch.setUint16(8, 0x0800, true);
+      ch.setUint16(10, 0, true);
+      ch.setUint16(12, stamp.time, true);
+      ch.setUint16(14, stamp.date, true);
+      ch.setUint32(16, e.crc, true);
+      ch.setUint32(20, e.size, true);
+      ch.setUint32(24, e.size, true);
+      ch.setUint16(28, name.length, true);
+      ch.setUint32(42, offset, true);
+      new Uint8Array(ch.buffer).set(name, 46);
+      central.push(ch.buffer);
+
+      offset += 30 + name.length + e.size;
+    });
+
+    var cdSize = central.reduce(function (n, b) { return n + b.byteLength; }, 0);
+    var end = new DataView(new ArrayBuffer(22));
+    end.setUint32(0, 0x06054b50, true);
+    end.setUint16(8, entries.length, true);
+    end.setUint16(10, entries.length, true);
+    end.setUint32(12, cdSize, true);
+    end.setUint32(16, offset, true);
+    return new Blob(parts.concat(central, [end.buffer]), { type: 'application/zip' });
+  }
+
+  function progress(done, total) {
+    var box = $('prog');
+    box.hidden = total <= 0;
+    $('progBar').style.width = total ? Math.round(done / total * 100) + '%' : '0';
+  }
+
+  $('savePng').addEventListener('click', function () {
+    var row = currentRow();
+    if (!row || !S.art) { return; }
+    document.fonts.ready.then(function () {
+      return blobOf(renderFull(row));
+    }).then(function (b) {
+      download(b, (safeName(nameOf(row)) || 'gram') + '.png');
+      say('Saved.', 'good');
+    }).catch(function (e) { say(e.message, 'warn'); });
+  });
+
+  var busy = false;
+  $('saveAll').addEventListener('click', function () {
+    if (busy || !S.art) { return; }
+    var rows = [];
+    records().forEach(function (r, i) { if (!S.skip[i]) { rows.push({ row: r, i: i }); } });
+    if (!rows.length) { return; }
+    var names = fileNames(rows);
+    var zip = $('asZip').checked;
+    var entries = [];
+    busy = true;
+    $('saveAll').disabled = true;
+    progress(0, rows.length);
+    say('Drawing ' + rows.length + ' cards…', 'busy');
+
+    document.fonts.ready.then(function () {
+      return series(rows, function (r, i) {
+        return blobOf(renderFull(r.row)).then(function (blob) {
+          progress(i + 1, rows.length);
+          if (!zip) {
+            download(blob, names[i]);
+            /* Browsers throttle a burst of saves, so they are spaced out. */
+            return new Promise(function (res) { setTimeout(res, 220); });
+          }
+          return blob.arrayBuffer().then(function (buf) {
+            entries.push({ name: names[i], blob: blob, size: blob.size, crc: crc32(new Uint8Array(buf)) });
+          });
+        });
+      });
+    }).then(function () {
+      if (zip) {
+        var stamp = todayISO();
+        download(buildZip(entries), 'birthday-grams-' + stamp + '.zip');
+      }
+      say(rows.length + ' cards saved.', 'good');
+    }).catch(function (e) {
+      say(e.message || 'Something went wrong while saving.', 'warn');
+    }).then(function () {
+      busy = false;
+      progress(0, 0);
+      updateButtons();
+    });
+  });
+
+  /* ------------------------------------------------------------------ *
+   * remembering the layout
+   *
+   * Kept per browser. The access password is deliberately left out: on a
+   * shared school machine it would outlive whoever typed it.
+   * ------------------------------------------------------------------ */
+  var persistTimer;
+  function persist() {
+    clearTimeout(persistTimer);
+    persistTimer = setTimeout(writeStore, 350);
+  }
+
+  function writeStore() {
+    var save = {
+      v: 1,
+      fields: S.fields, map: S.map, filter: S.filter, refDate: S.refDate,
+      source: S.source, guides: S.guides,
+      outName: $('outName').value, asZip: $('asZip').checked,
+      apiBase: $('apiBase').value, apiPath: $('apiPath').value,
+      artName: S.art ? S.art.name : ''
+    };
+    /* The artwork rides along when it is small enough to be worth it, so a
+       reload picks up where it left off; a big print file is not forced in. */
+    if (S.art && S.art.src && S.art.src.length < 3000000) { save.art = S.art.src; }
+    try { localStorage.setItem(STORE, JSON.stringify(save)); }
+    catch (e) {
+      try {
+        delete save.art;
+        localStorage.setItem(STORE, JSON.stringify(save));
+      } catch (e2) { /* a full or blocked store just means no memory */ }
+    }
+  }
+
+  function readStore() {
+    try {
+      var raw = localStorage.getItem(STORE);
+      return raw ? JSON.parse(raw) : null;
+    } catch (e) { return null; }
+  }
+
+  function applySaved(saved) {
+    if (!saved) { return null; }
+    if (Array.isArray(saved.fields) && saved.fields.length) {
+      /* Fill in anything a newer version of this page added, so an old
+         saved layout does not arrive with holes in it. */
+      var template = mk('static', '', {});
+      S.fields = saved.fields.map(function (f) {
+        var merged = {};
+        Object.keys(template).forEach(function (k) { merged[k] = template[k]; });
+        Object.keys(f).forEach(function (k) { merged[k] = f[k]; });
+        if (!merged.id) { merged.id = merged.source + '-' + Math.random().toString(36).slice(2, 7); }
+        return merged;
+      });
+    }
+    if (saved.map) { S.map = saved.map; }
+    if (saved.filter) { S.filter = saved.filter; }
+    if (saved.refDate) { S.refDate = saved.refDate; }
+    if (saved.guides != null) { S.guides = !!saved.guides; }
+    if (saved.outName) { $('outName').value = saved.outName; }
+    if (saved.asZip != null) { $('asZip').checked = !!saved.asZip; }
+    if (saved.apiBase) { $('apiBase').value = saved.apiBase; }
+    if (saved.apiPath) { $('apiPath').value = saved.apiPath; }
+    return saved.art ? { src: saved.art, name: saved.artName } : null;
+  }
+
+  $('outName').addEventListener('change', persist);
+  $('asZip').addEventListener('change', persist);
+  $('apiBase').addEventListener('change', persist);
+  $('apiPath').addEventListener('change', persist);
+
+  /* ---- the layout as a file ---- */
+  $('tplSave').addEventListener('click', function () {
+    var doc = { kind: 'birthday-gram-layout', v: 1, fields: S.fields, map: S.map,
+                filter: S.filter, refDate: S.refDate };
+    download(new Blob([JSON.stringify(doc, null, 2)], { type: 'application/json' }),
+             'birthday-gram-layout.json');
+    say('Layout saved to a file.', 'good');
+  });
+  $('tplLoad').addEventListener('click', function () { $('tplFile').click(); });
+  $('tplFile').addEventListener('change', function () {
+    var file = this.files && this.files[0];
+    this.value = '';
+    if (!file) { return; }
+    readAs(file, 'text').then(function (text) {
+      var doc = JSON.parse(text);
+      if (!doc || !Array.isArray(doc.fields)) { throw new Error('That file is not a saved layout.'); }
+      applySaved(doc);
+      S.sel = S.fields.length ? S.fields[0].id : null;
+      renderFieldList(); syncProps(); invalidate(); refresh(); persist();
+      say('Layout loaded.', 'good');
+    }).catch(function (e) {
+      say(e.message === 'That file is not a saved layout.' ? e.message
+          : 'That file could not be read as a layout.', 'warn');
+    });
+  });
+  $('tplReset').addEventListener('click', function () {
+    S.fields = defaultFields();
+    S.sel = S.fields[0].id;
+    renderFieldList(); syncProps(); render(); persist();
+    say('Layout reset.', 'good');
+  });
+
+  /* ------------------------------------------------------------------ *
+   * start
+   * ------------------------------------------------------------------ */
+  var pendingArt = applySaved(readStore());
+  if (!S.fields.length) { S.fields = defaultFields(); }
+  S.sel = S.fields[0].id;
+  $('refDate').value = S.refDate;
+  $('guides').checked = S.guides;
+  setSource(S.source === 'api' ? 'api' : 'csv');
+  renderFieldList();
+  syncProps();
+  refresh();
+
+  if (pendingArt) {
+    setArt(pendingArt.src, pendingArt.name)
+      .then(function () { syncProps(); render(); updateButtons(); })
+      .catch(function () { /* a saved image that will not decode is simply dropped */ });
+  }
+
+  /* Webfonts land after the first paint, so the preview is drawn again once
+     the real faces are in rather than being measured against a fallback. */
+  if (document.fonts && document.fonts.ready) {
+    document.fonts.ready.then(function () { render(); });
+  }
+
+  var resizeTimer;
+  window.addEventListener('resize', function () {
+    if (S.zoom !== 'fit') { return; }
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(render, 80);
+  });
+})();
+</script>
+</body>
+</html>
