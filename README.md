@@ -145,6 +145,33 @@ cannot read sorts to the end, where it gets noticed rather than lost.
 - **Download all** writes one zip, assembled so only one card is held in
   memory at a time rather than the whole batch.
 
+## Two builds, one program
+
+`index.html` is the standalone page: open it from disk, or upload it to a web
+host. It carries its own doctype, which is what keeps a browser out of quirks
+mode when the file is opened directly.
+
+`artifact.html` is the same program published as a Claude Artifact, at
+<https://claude.ai/code/artifact/e647617c-85f8-45f5-acae-82b61d2f252c>. The
+Artifact runtime supplies the doctype, head and body itself and expects the
+file to be the contents alone, so that wrapper is stripped — and nothing else
+is. `node build-artifact.js` regenerates it from `index.html`; the build
+refuses rather than guessing if the wrapper is not shaped as it expects. Edit
+`index.html` and rebuild; never edit `artifact.html` by hand.
+
+Saving is the one behaviour that differs, and the program handles both without
+being told which it is in. A framed page **cannot start its own download** —
+an `<a download>` click is silently inert there — so it goes through the
+viewer's `downloads` capability, which asks the person before writing
+anything. Standalone there is no such capability and the link is the only
+route, and it works. Framed with the capability unavailable, neither route
+works, and the page says so instead of reporting a save that did not happen.
+
+The catch worth knowing before sharing the link: **that capability is limited
+to people inside the owner's organization.** Anyone else can open the artifact
+and lay out cards, but cannot download them. For a PTO parent outside the
+organization, send them `index.html` instead — it needs nothing.
+
 ## parked-cheddarup-api/
 
 An earlier attempt to read orders from the Cheddar Up API live, rather than
