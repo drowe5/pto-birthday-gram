@@ -1,6 +1,7 @@
-Payment ID,Payer Name,Payer Email,Item Name,Quantity,Total,Student's Name,Birthday Message,Student's Birthdate,From (who is this gram from?)
-1001,Dana Rowe,d@example.com,Birthday Gram,1,5.00,Avery Nakamura,"Happy birthday, Avery! Hope it's the very best day.",2015-03-14,The Rowe Family
-1002,Sam Ortiz,s@example.com,Birthday Gram,2,10.00,Jordan Lee,"Have an amazing day!",4/2/2016,Mrs. Delgado's class
-1003,Kim Patel,k@example.com,Spirit T-Shirt,1,15.00,,,,
-1004,Lee Chen,l@example.com,Birthday Gram,1,5.00,Priya Raman,"Wishing you cake, presents, and absolutely zero homework. Enjoy every single minute of your special day!",June 21 2014,Your friends in 5th grade
-1005,Ana Diaz,a@example.com,Birthday Gram,1,5.00,Miles O'Brien,"Ten already?!",not sure,Grandma
+Payment Date,Payment Method,Last 4 of Acct,Payment Status,Payer First Name,Payer Last Name,Payer Email,Qty Sold,Cost,Subtotal,Discounts,Item Total,Refunded Amount,Quantity Refunded,Net Amount,Net Quantity,Student's First Name,Student's Last Name,"Please indicate who this gram is from (your name, Mom & Dad, etc.)",Message for student (will be added to certificate),Delivery Date,Student's Age,Grade of Student,Teacher's Name,From,Message
+"Sep 12, 2026 10:04:00 AM",Card,,Completed,Buyer,Family,buyer@example.com,1,25.0,25.0,0.0,25.0,0.0,,25.0,1,Avery,Nakamura,Mom & Dad,"Happy birthday, Avery! Hope it's the very best day.","Sep 15, 2026",8,3rd,Mrs. Delgado,,
+"Sep 12, 2026 10:04:00 AM",Card,,Completed,Buyer,Family,buyer@example.com,2,25.0,50.0,0.0,50.0,0.0,,50.0,2,Jordan,Lee,The Lee Family,Have an amazing day!,"Sep 15, 2026",Turning 8,3rd,Mr. Okonkwo,,
+"Sep 12, 2026 10:04:00 AM",Card,,Completed,Buyer,Family,buyer@example.com,1,25.0,25.0,0.0,25.0,0.0,,25.0,1,Priya,Raman,Your friends in 5th grade,"Wishing you cake, presents, and absolutely zero homework. Enjoy every single minute of your special day!","Sep 16, 2026",10,5th,Sra. Pena,,
+"Sep 12, 2026 10:04:00 AM",Card,,Completed,Buyer,Family,buyer@example.com,1,25.0,25.0,0.0,25.0,0.0,,25.0,1,Mary-Katherine,Okafor,Grandma,Ten already?!,"Sep 16, 2026",Turning 10,4th,Ms. Chen/Ms. Ruiz ,,
+"Sep 12, 2026 10:04:00 AM",Card,,Completed,Buyer,Family,buyer@example.com,1,25.0,25.0,0.0,25.0,0.0,,25.0,1,Miles,O'Brien,"Dad, Mom & Gran","Feliz cumpleanos, Miles!","Sep 17, 2026",not sure,Pre-K,Mrs. Alvarez,,
+"Sep 12, 2026 10:04:00 AM",Card,,Completed,Buyer,Family,buyer@example.com,1,25.0,25.0,0.0,25.0,0.0,,25.0,1,Sam,Whitfield-Ross,Aunt Jo & Uncle Ray,Happy birthday!! ,"Sep 17, 2026",6,Kindergarten,Teacher TBD,,

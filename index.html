@@ -219,49 +219,21 @@
 
     <section class="sec">
       <h2>Orders</h2>
-      <div class="row" style="margin-bottom:10px">
-        <button type="button" class="btn small grow" id="tabCsv" aria-pressed="true">Spreadsheet</button>
-        <button type="button" class="btn small grow" id="tabApi" aria-pressed="false">Cheddar Up</button>
+      <div class="drop" id="csvDrop" tabindex="0" role="button">
+        <strong>Drop the Cheddar Up export</strong>
+        .xlsx, .csv or .tsv &middot; or click to choose
+      </div>
+      <input type="file" id="csvFile" accept=".xlsx,.csv,.tsv,.txt,text/csv" hidden>
+
+      <div class="field" id="sheetWrap" style="margin-top:10px" hidden>
+        <label for="sheetPick">Sheet</label>
+        <select id="sheetPick"></select>
       </div>
 
-      <div id="paneCsv">
-        <div class="drop" id="csvDrop" tabindex="0" role="button">
-          <strong>Drop the export</strong>
-          CSV or TSV &middot; or click to choose
-        </div>
-        <input type="file" id="csvFile" accept=".csv,.tsv,.txt,text/csv" hidden>
-        <p class="hint">In Cheddar&nbsp;Up, open the collection, then
-          <em>Reports &rarr; Export</em> and choose the item-level report so each
-          gram is its own row. If you only have an .xlsx, open it and
-          <em>Save&nbsp;as &rarr; CSV</em> first.</p>
-      </div>
-
-      <div id="paneApi" hidden>
-        <div class="field">
-          <label for="apiBase">Proxy file on your server</label>
-          <input type="text" id="apiBase" value="cheddar.php" spellcheck="false">
-        </div>
-        <div class="field">
-          <label for="apiToken">Access password (from config.php)</label>
-          <input type="password" id="apiToken" autocomplete="off" spellcheck="false">
-        </div>
-        <div class="field">
-          <label for="apiPath">Endpoint</label>
-          <div class="row">
-            <input type="text" id="apiPath" class="grow" value="/v1/collections" spellcheck="false">
-            <button type="button" class="btn small" id="apiGo">Get</button>
-          </div>
-        </div>
-        <div class="row">
-          <button type="button" class="btn small grow" id="apiProbe">Check setup</button>
-          <button type="button" class="btn small grow" id="apiUse" disabled>Use these rows</button>
-        </div>
-        <div class="crumbs" id="apiCrumbs"></div>
-        <div class="peek" id="apiPeek" hidden></div>
-        <p class="hint">Start at <code>/v1/collections</code> to find your birthday gram
-          collection, then follow its id into the endpoint that lists payments or items.
-          Whatever comes back, the rows below get mapped the same way.</p>
-      </div>
+      <p class="hint">In Cheddar&nbsp;Up open the collection and choose
+        <em>Reports &rarr; Export</em>. The workbook it gives you has a sheet
+        per item; the birthday gram sheet is the one with a column per
+        checkout question, and it is picked automatically.</p>
     </section>
 
     <section class="sec" id="mapSec" hidden>
@@ -317,7 +289,10 @@
     <section class="sec">
       <h2>Text on the card</h2>
       <div class="flist" id="flist"></div>
-      <button type="button" class="btn small wide" id="addField">Add a line of fixed text</button>
+      <div class="row">
+        <button type="button" class="btn small grow" id="addField">Fixed text</button>
+        <button type="button" class="btn small grow" id="addColumn">Any column</button>
+      </div>
     </section>
 
     <section class="sec" id="propSec" hidden>
@@ -410,6 +385,11 @@
         <label class="check"><input type="checkbox" id="pShadow"> Drop shadow</label>
       </div>
 
+      <div class="field" id="columnWrap" hidden>
+        <label for="pColumn">Column</label>
+        <select id="pColumn"></select>
+      </div>
+
       <div class="field" id="dateWrap" hidden>
         <label for="pDateFmt">Date shown as</label>
         <select id="pDateFmt">
@@ -423,11 +403,8 @@
       </div>
 
       <div class="field" id="ageWrap" hidden>
-        <label for="pAgeMode">Age counted as</label>
-        <select id="pAgeMode">
-          <option value="turning">the age they turn this birthday</option>
-          <option value="now">their age on the delivery date</option>
-        </select>
+        <label for="pAgeMode">Age shown as</label>
+        <select id="pAgeMode"></select>
       </div>
 
       <div class="field">
@@ -500,10 +477,11 @@
   var S = {
     art: null,
     rows: [], columns: [],
-    map: { student: '', message: '', from: '', birthdate: '', qty: '' },
+    map: { studentFirst: '', studentLast: '', from: '', message: '', age: '',
+           grade: '', teacher: '', deliveryDate: '', birthdate: '', qty: '' },
     filter: { col: '', val: '' },
     fields: [], sel: null, idx: 0, skip: {},
-    refDate: todayISO(), zoom: 'fit', source: 'csv', guides: true
+    refDate: todayISO(), zoom: 'fit', guides: true, sheets: [], sheet: 0
   };
 
   function todayISO() {
@@ -514,18 +492,24 @@
 
   function defaultFields() {
     return [
-      mk('student',   'Student name', { y: .40, h: .13, size: .090, weight: '700', font: "'Fredoka', system-ui, sans-serif" }),
-      mk('age',       'Age',          { y: .54, h: .07, size: .048, weight: '600', prefix: 'Turning ', suffix: '!' }),
-      mk('birthdate', 'Birthdate',    { y: .615, h: .05, size: .030, weight: '400', color: '#5a6472' }),
-      mk('message',   'Message',      { y: .69, h: .16, size: .034, weight: '400', italic: true, shrink: true }),
-      mk('from',      'From',         { y: .87, h: .06, size: .034, weight: '600', prefix: '— ' })
+      mk('student',   { y: .40, h: .13, size: .090, weight: '700', font: "'Fredoka', system-ui, sans-serif" }),
+      mk('age',       { y: .54, h: .07, size: .048, weight: '600', prefix: 'Turning ', suffix: '!' }),
+      mk('message',   { y: .64, h: .18, size: .034, italic: true }),
+      mk('from',      { y: .85, h: .06, size: .034, weight: '600', prefix: '\u2014 ' }),
+      /* Present but off: which of these belongs on a card depends on whether
+         it is handed to the child or sorted by whoever walks the halls. */
+      mk('grade',     { y: .93, h: .04, size: .022, color: '#5a6472', visible: false }),
+      mk('teacher',   { y: .05, h: .04, size: .022, color: '#5a6472', visible: false }),
+      mk('deliveryDate', { y: .10, h: .04, size: .022, color: '#5a6472', visible: false }),
+      mk('birthdate', { y: .615, h: .05, size: .030, color: '#5a6472', visible: false })
     ];
   }
-  function mk(source, label, o) {
+
+  function mk(source, o) {
     o = o || {};
     return {
       id: source + '-' + Math.random().toString(36).slice(2, 7),
-      source: source, label: label, text: o.text || '',
+      source: source, column: o.column || '', text: o.text || '',
       x: o.x != null ? o.x : .08, y: o.y, w: o.w != null ? o.w : .84, h: o.h,
       size: o.size, font: o.font || "'Poppins', system-ui, sans-serif",
       weight: o.weight || '400', italic: !!o.italic, upper: !!o.upper,
@@ -533,7 +517,8 @@
       line: o.line || 1.2, shrink: o.shrink !== false,
       outline: !!o.outline, outlineColor: o.outlineColor || '#ffffff', outlineWidth: o.outlineWidth || 6,
       shadow: !!o.shadow, prefix: o.prefix || '', suffix: o.suffix || '',
-      dateFmt: o.dateFmt || 'long', ageMode: o.ageMode || 'turning', visible: true
+      dateFmt: o.dateFmt || 'long', ageMode: o.ageMode || 'number',
+      visible: o.visible !== false
     };
   }
 
@@ -606,93 +591,216 @@
       }
       if (any) { out.push(o); }
     }
-    return { columns: head, rows: out };
+    /* A column empty in every row carries nothing, and Cheddar Up ships two
+       of them -- its own unused "From" and "Message" -- whose names would
+       otherwise win those roles ahead of the real checkout questions. */
+    var cols = head.filter(function (h) {
+      return out.some(function (o) { return o[h] !== ''; });
+    });
+    return { columns: cols, rows: out };
   }
 
   /* ------------------------------------------------------------------ *
-   * reading whatever the API sends back
+   * reading .xlsx
+   *
+   * An xlsx is a zip of XML. The browser can inflate raw deflate on its own
+   * and parse XML on its own, so the whole format is reachable without a
+   * library -- which keeps this page a single file that works offline.
    * ------------------------------------------------------------------ */
 
-  function isPlain(v) { return v && typeof v === 'object' && !Array.isArray(v); }
-
-  /* Checkout questions usually arrive as a list of {name, value} objects
-     rather than as columns. Left flat they become "fields.0.value", which is
-     useless to map; folded into their own question text they become the
-     columns a person actually recognises. */
-  function foldPairs(arr) {
-    var nameKeys = ['name', 'label', 'question', 'title', 'key', 'field', 'prompt'];
-    var valKeys = ['value', 'answer', 'response', 'text', 'val', 'content'];
-    var out = {}, hit = 0;
-    for (var i = 0; i < arr.length; i++) {
-      var o = arr[i];
-      if (!isPlain(o)) { return null; }
-      var nk = null, vk = null, k;
-      for (k = 0; k < nameKeys.length; k++) { if (typeof o[nameKeys[k]] === 'string') { nk = nameKeys[k]; break; } }
-      for (k = 0; k < valKeys.length; k++) { if (o[valKeys[k]] != null && !isPlain(o[valKeys[k]])) { vk = valKeys[k]; break; } }
-      if (!nk || !vk) { return null; }
-      var label = String(o[nk]).trim() || ('Answer ' + (i + 1));
-      out[label] = Array.isArray(o[vk]) ? o[vk].join(', ') : String(o[vk]);
-      hit++;
+  function unzip(buf) {
+    var dv = new DataView(buf), u8 = new Uint8Array(buf);
+    /* Find the end-of-central-directory record by scanning back from the end;
+       it is last, but a trailing comment can push it up to 64k earlier. */
+    var eocd = -1;
+    for (var i = u8.length - 22; i >= 0 && i > u8.length - 65558; i--) {
+      if (dv.getUint32(i, true) === 0x06054b50) { eocd = i; break; }
     }
-    return hit ? out : null;
+    if (eocd < 0) { throw new Error('That file is not a readable .xlsx (no zip directory).'); }
+
+    var count = dv.getUint16(eocd + 10, true);
+    var start = dv.getUint32(eocd + 16, true);
+    var jobs = [], at = start;
+    for (var n = 0; n < count; n++) {
+      if (dv.getUint32(at, true) !== 0x02014b50) { break; }
+      var method = dv.getUint16(at + 10, true);
+      var size = dv.getUint32(at + 20, true);
+      var nameLen = dv.getUint16(at + 28, true);
+      var extraLen = dv.getUint16(at + 30, true);
+      var cmtLen = dv.getUint16(at + 32, true);
+      var lho = dv.getUint32(at + 42, true);
+      var name = new TextDecoder().decode(u8.subarray(at + 46, at + 46 + nameLen));
+      /* The local header repeats the name and extra fields at its own
+         lengths, which need not match the directory's -- so the data offset
+         has to be read from the local header, not computed from this one. */
+      var lNameLen = dv.getUint16(lho + 26, true);
+      var lExtraLen = dv.getUint16(lho + 28, true);
+      var from = lho + 30 + lNameLen + lExtraLen;
+      jobs.push({ name: name, method: method, bytes: u8.subarray(from, from + size) });
+      at += 46 + nameLen + extraLen + cmtLen;
+    }
+
+    return Promise.all(jobs.map(function (j) {
+      if (j.method === 0) { return Promise.resolve([j.name, j.bytes]); }
+      if (j.method !== 8) { return Promise.resolve([j.name, null]); }
+      if (typeof DecompressionStream === 'undefined') {
+        throw new Error('This browser cannot unzip .xlsx. Use Chrome or Safari 16.4 and up, or save the sheet as CSV.');
+      }
+      var ds = new DecompressionStream('deflate-raw');
+      return new Response(new Blob([j.bytes]).stream().pipeThrough(ds)).arrayBuffer()
+        .then(function (out) { return [j.name, new Uint8Array(out)]; });
+    })).then(function (pairs) {
+      var files = {};
+      pairs.forEach(function (kv) { if (kv[1]) { files[kv[0]] = kv[1]; } });
+      return files;
+    });
   }
 
-  function flatten(obj, prefix, out, depth) {
-    out = out || {}; prefix = prefix || ''; depth = depth || 0;
-    if (depth > 4) { return out; }
-    Object.keys(obj).forEach(function (k) {
-      var v = obj[k], key = prefix ? prefix + '.' + k : k;
-      if (v == null) { out[key] = ''; return; }
-      if (Array.isArray(v)) {
-        if (!v.length) { out[key] = ''; return; }
-        var folded = isPlain(v[0]) ? foldPairs(v) : null;
-        if (folded) {
-          Object.keys(folded).forEach(function (fk) { out[prefix ? prefix + '.' + fk : fk] = folded[fk]; });
-          return;
-        }
-        if (!isPlain(v[0])) { out[key] = v.join(', '); return; }
-        v.slice(0, 10).forEach(function (item, i) { flatten(item, key + '.' + i, out, depth + 1); });
-        return;
-      }
-      if (isPlain(v)) { flatten(v, key, out, depth + 1); return; }
-      out[key] = String(v);
-    });
+  function xml(files, path) {
+    if (!files[path]) { return null; }
+    var text = new TextDecoder().decode(files[path]);
+    var doc = new DOMParser().parseFromString(text, 'application/xml');
+    return doc.getElementsByTagName('parsererror').length ? null : doc;
+  }
+
+  function kids(node, name) {
+    var out = [];
+    for (var c = node.firstElementChild; c; c = c.nextElementSibling) {
+      if (c.localName === name) { out.push(c); }
+    }
     return out;
   }
+  function kid(node, name) { return kids(node, name)[0] || null; }
 
-  /* Every list of objects in the payload, so the page can offer them as
-     choices instead of guessing which one holds the orders.
-     A list of {name, value} answers is skipped: it sits inside a single
-     order and is folded into that order's columns, so offering it as the
-     record list would hand back one row per question instead of per gram. */
-  function findArrays(node, path, found, depth) {
-    found = found || []; depth = depth || 0;
-    if (depth > 5 || !node || typeof node !== 'object') { return found; }
-    if (Array.isArray(node)) {
-      if (node.length && isPlain(node[0]) && !foldPairs(node)) {
-        found.push({ path: path || '(top level)', arr: node, depth: depth });
-      }
-      node.slice(0, 3).forEach(function (n, i) { findArrays(n, path + '[' + i + ']', found, depth + 1); });
-      return found;
+  function colIndex(ref) {
+    var n = 0;
+    for (var i = 0; i < ref.length; i++) {
+      var c = ref.charCodeAt(i);
+      if (c < 65 || c > 90) { break; }
+      n = n * 26 + (c - 64);
     }
-    Object.keys(node).forEach(function (k) {
-      findArrays(node[k], path ? path + '.' + k : k, found, depth + 1);
-    });
-    return found;
+    return n - 1;
   }
 
-  function rowsFromRecords(records) {
-    var flat = records.map(function (r) { return flatten(r); });
-    var cols = [], seen = {};
-    flat.forEach(function (o) {
-      Object.keys(o).forEach(function (k) { if (!seen[k]) { seen[k] = 1; cols.push(k); } });
+  /* Excel keeps a date as a day count and says so only through the cell's
+     number format, so the formats have to be read to tell 45912 from 45912. */
+  function dateStyles(files) {
+    var doc = xml(files, 'xl/styles.xml');
+    var isDate = {};
+    if (!doc) { return isDate; }
+    var custom = {};
+    var fmts = doc.getElementsByTagName('numFmt');
+    for (var i = 0; i < fmts.length; i++) {
+      var code = fmts[i].getAttribute('formatCode') || '';
+      /* Strip the quoted literals and colour codes first; a "d" inside the
+         word "Paid" is not a day marker. */
+      var bare = code.replace(/"[^"]*"/g, '').replace(/\[[^\]]*\]/g, '');
+      custom[fmts[i].getAttribute('numFmtId')] = /[ymdhs]/i.test(bare);
+    }
+    var xfs = kid(doc.documentElement, 'cellXfs');
+    if (!xfs) { return isDate; }
+    kids(xfs, 'xf').forEach(function (xf, idx) {
+      var id = xf.getAttribute('numFmtId') || '0';
+      var n = parseInt(id, 10);
+      var builtin = (n >= 14 && n <= 22) || (n >= 45 && n <= 47);
+      isDate[idx] = builtin || custom[id] === true;
     });
-    /* A column that is empty in every row is noise from the API, not a
-       question anybody asked. */
-    cols = cols.filter(function (k) {
-      return flat.some(function (o) { return (o[k] || '').trim() !== ''; });
+    return isDate;
+  }
+
+  function serialToISO(n) {
+    /* Day 1 is 1900-01-01, and Excel believes 1900 was a leap year, so the
+       epoch that makes the arithmetic come out is 1899-12-30. */
+    var ms = Math.round((n - 25569) * 86400000);
+    var d = new Date(ms);
+    if (isNaN(d.getTime())) { return String(n); }
+    return d.getUTCFullYear() + '-' + pad2(d.getUTCMonth() + 1) + '-' + pad2(d.getUTCDate());
+  }
+
+  function sheetRows(doc, shared, isDate) {
+    var data = kid(doc.documentElement, 'sheetData');
+    if (!data) { return []; }
+    var rows = [];
+    kids(data, 'row').forEach(function (r) {
+      var cells = [], width = 0;
+      kids(r, 'c').forEach(function (c) {
+        var at = colIndex(c.getAttribute('r') || '');
+        if (at < 0) { at = width; }
+        var t = c.getAttribute('t'), value = '';
+        if (t === 'inlineStr') {
+          var is = kid(c, 'is');
+          if (is) {
+            var ts = is.getElementsByTagName('*');
+            for (var i = 0; i < ts.length; i++) {
+              if (ts[i].localName === 't') { value += ts[i].textContent; }
+            }
+          }
+        } else {
+          var v = kid(c, 'v');
+          var raw = v ? v.textContent : '';
+          if (t === 's') {
+            value = shared[parseInt(raw, 10)] || '';
+          } else if (raw !== '' && t !== 'str' && t !== 'e') {
+            var style = parseInt(c.getAttribute('s') || '-1', 10);
+            var num = parseFloat(raw);
+            value = (isDate[style] && isFinite(num) && num > 0) ? serialToISO(num) : raw;
+          } else {
+            value = raw;
+          }
+        }
+        cells[at] = value;
+        if (at + 1 > width) { width = at + 1; }
+      });
+      for (var i = 0; i < width; i++) { if (cells[i] == null) { cells[i] = ''; } }
+      rows.push(cells);
     });
-    return { columns: cols, rows: flat };
+    return rows;
+  }
+
+  function readWorkbook(buf) {
+    return unzip(buf).then(function (files) {
+      var wb = xml(files, 'xl/workbook.xml');
+      if (!wb) { throw new Error('That .xlsx has no workbook inside it.'); }
+
+      var rels = {}, relDoc = xml(files, 'xl/_rels/workbook.xml.rels');
+      if (relDoc) {
+        var rs = relDoc.getElementsByTagName('*');
+        for (var i = 0; i < rs.length; i++) {
+          if (rs[i].localName === 'Relationship') {
+            rels[rs[i].getAttribute('Id')] = rs[i].getAttribute('Target');
+          }
+        }
+      }
+
+      var shared = [], ssDoc = xml(files, 'xl/sharedStrings.xml');
+      if (ssDoc) {
+        kids(ssDoc.documentElement, 'si').forEach(function (si) {
+          var text = '', ts = si.getElementsByTagName('*');
+          for (var j = 0; j < ts.length; j++) {
+            if (ts[j].localName === 't') { text += ts[j].textContent; }
+          }
+          shared.push(text);
+        });
+      }
+
+      var isDate = dateStyles(files);
+      var sheets = [];
+      var list = kid(wb.documentElement, 'sheets');
+      if (!list) { throw new Error('That .xlsx lists no sheets.'); }
+      kids(list, 'sheet').forEach(function (sh, i) {
+        var rid = sh.getAttribute('r:id') || sh.getAttributeNS(
+          'http://schemas.openxmlformats.org/officeDocument/2006/relationships', 'id');
+        var target = rels[rid] || ('worksheets/sheet' + (i + 1) + '.xml');
+        if (target.charAt(0) === '/') { target = target.slice(1); }
+        else if (target.indexOf('xl/') !== 0) { target = 'xl/' + target; }
+        var doc = xml(files, target);
+        sheets.push({
+          name: sh.getAttribute('name') || ('Sheet ' + (i + 1)),
+          rows: doc ? sheetRows(doc, shared, isDate) : []
+        });
+      });
+      return sheets;
+    });
   }
 
   /* ------------------------------------------------------------------ *
@@ -800,19 +908,46 @@
     return records().filter(function (r, i) { return !S.skip[i]; });
   }
 
+  function col(row, role) {
+    return S.map[role] ? String(row[S.map[role]] || '').trim() : '';
+  }
+
   function nameOf(row) {
-    return String((S.map.student && row[S.map.student]) || '').trim();
+    return (col(row, 'studentFirst') + ' ' + col(row, 'studentLast')).trim();
+  }
+
+  /* Parents do not answer an age question with a bare number. This export
+     carries "8", "10" and "Turning 8" in the same column, and the card
+     already supplies its own "Turning", so the digits are what is wanted
+     unless the operator asks for the answer verbatim. */
+  function ageValue(raw, mode) {
+    var s = String(raw || '').trim();
+    if (mode === 'raw') { return s; }
+    var m = s.match(/\d{1,3}/);
+    return m ? m[0] : '';
   }
 
   function rawValue(field, row) {
     switch (field.source) {
-      case 'static':    return field.text;
-      case 'student':   return S.map.student ? row[S.map.student] : '';
-      case 'message':   return S.map.message ? row[S.map.message] : '';
-      case 'from':      return S.map.from ? row[S.map.from] : '';
-      case 'birthdate': return S.map.birthdate ? formatDate(row[S.map.birthdate], field.dateFmt) : '';
-      case 'age':       return S.map.birthdate ? ageFrom(row[S.map.birthdate], field.ageMode) : '';
-      default:          return '';
+      case 'static':       return field.text;
+      case 'column':       return field.column ? row[field.column] : '';
+      case 'student':      return nameOf(row);
+      case 'studentFirst': return col(row, 'studentFirst');
+      case 'studentLast':  return col(row, 'studentLast');
+      case 'from':         return col(row, 'from');
+      case 'message':      return col(row, 'message');
+      case 'grade':        return col(row, 'grade');
+      case 'teacher':      return col(row, 'teacher');
+      case 'deliveryDate': return S.map.deliveryDate ? formatDate(col(row, 'deliveryDate'), field.dateFmt) : '';
+      case 'birthdate':    return S.map.birthdate ? formatDate(col(row, 'birthdate'), field.dateFmt) : '';
+      /* An age column beats a birthdate: it is what the form asked, so it is
+         what the parent meant. Working it out from a birthdate is the
+         fallback for a form that collected one instead. */
+      case 'age':
+        if (S.map.age) { return ageValue(col(row, 'age'), field.ageMode); }
+        if (S.map.birthdate) { return ageFrom(col(row, 'birthdate'), field.ageMode); }
+        return '';
+      default:             return '';
     }
   }
 
@@ -829,34 +964,51 @@
    * guessing the mapping
    * ------------------------------------------------------------------ */
   var GUESS = {
-    student: [/\bstudent\b/i, /recipient/i, /\bchild\b/i, /birthday (kid|child|person|student)/i,
-              /who.*(gram|for)/i, /\bhonoree\b/i, /name of.*(student|child|recipient)/i],
-    message: [/message/i, /\bnote\b/i, /greeting/i, /personal/i, /what.*say/i, /\bwish(es)?\b/i],
-    from:    [/\bfrom\b/i, /sender/i, /signed/i, /\bby\b.*name/i, /payer name/i, /purchaser/i, /buyer/i, /billing name/i],
-    birthdate: [/birth ?date/i, /date of birth/i, /\bdob\b/i, /birthday/i],
-    qty:     [/^qty$/i, /quantity/i, /\bhow many\b/i]
+    studentFirst: [/student'?s?\s*first\s*name/i, /first\s*name.*student/i, /recipient'?s?\s*first/i,
+                   /child'?s?\s*first\s*name/i],
+    studentLast:  [/student'?s?\s*last\s*name/i, /last\s*name.*student/i, /recipient'?s?\s*last/i,
+                   /child'?s?\s*last\s*name/i],
+    from:         [/who\s*this\s*gram\s*is\s*from/i, /gram\s*is\s*from/i, /indicate\s*who/i,
+                   /\bsigned\b/i, /\bfrom\b/i],
+    message:      [/message\s*for\s*student/i, /\bmessage\b/i, /\bnote\b/i, /greeting/i, /\bwish(es)?\b/i],
+    age:          [/student'?s?\s*age/i, /\bage\b/i, /how\s*old/i, /turning/i],
+    grade:        [/grade\s*of\s*student/i, /\bgrade\b/i, /\bhomeroom\b/i],
+    teacher:      [/teacher'?s?\s*name/i, /\bteacher\b/i, /\bclassroom\b/i],
+    deliveryDate: [/delivery\s*date/i, /date\s*of\s*delivery/i, /\bdeliver/i],
+    birthdate:    [/birth\s*date/i, /date\s*of\s*birth/i, /\bdob\b/i, /birthday/i],
+    qty:          [/^qty\s*sold$/i, /^qty$/i, /^quantity$/i, /\bhow\s*many\b/i]
   };
-  /* "Payer Name" is a decent guess for From and a terrible one for Student,
-     so a column that looks like the buyer is never offered as the recipient. */
-  var NOT_STUDENT = [/payer/i, /purchaser/i, /buyer/i, /your name/i, /billing/i, /parent/i, /email/i];
+  /* A column naming the buyer is a decent guess for From and a terrible one
+     for the recipient, and a refunded or net count is not the quantity
+     ordered -- both mistakes print, so both are refused outright. */
+  var NEVER = {
+    studentFirst: [/payer/i, /purchaser/i, /buyer/i, /your name/i, /billing/i, /parent/i, /email/i],
+    studentLast:  [/payer/i, /purchaser/i, /buyer/i, /your name/i, /billing/i, /parent/i, /email/i],
+    qty:          [/refund/i, /\bnet\b/i],
+    age:          [/message/i, /average/i],
+    from:         [/payer/i, /email/i],
+    deliveryDate: [/payment/i],
+    birthdate:    [/message|gram|item|payment/i]
+  };
 
-  function guessMap() {
-    var used = {};
+  function guessMap(map, columns) {
+    map = map || S.map; columns = columns || S.columns;
+    var used = {}, found = 0;
     Object.keys(GUESS).forEach(function (role) {
-      if (S.map[role] && S.columns.indexOf(S.map[role]) >= 0) { used[S.map[role]] = 1; return; }
+      if (map[role] && columns.indexOf(map[role]) >= 0) { used[map[role]] = 1; found++; return; }
       var best = '';
       for (var p = 0; p < GUESS[role].length && !best; p++) {
-        for (var c = 0; c < S.columns.length; c++) {
-          var col = S.columns[c];
-          if (used[col] || !GUESS[role][p].test(col)) { continue; }
-          if (role === 'student' && NOT_STUDENT.some(function (re) { return re.test(col); })) { continue; }
-          if (role === 'birthdate' && /message|gram|item/i.test(col)) { continue; }
-          best = col; break;
+        for (var c = 0; c < columns.length; c++) {
+          var name = columns[c];
+          if (used[name] || !GUESS[role][p].test(name)) { continue; }
+          if ((NEVER[role] || []).some(function (re) { return re.test(name); })) { continue; }
+          best = name; break;
         }
       }
-      S.map[role] = best;
-      if (best) { used[best] = 1; }
+      map[role] = best;
+      if (best) { used[best] = 1; found++; }
     });
+    return found;
   }
 
   /* ------------------------------------------------------------------ *
@@ -962,13 +1114,16 @@
     });
   }
 
+  var DEMO = {
+    student: 'Avery Nakamura', studentFirst: 'Avery', studentLast: 'Nakamura',
+    message: 'Happy birthday! Hope your day is the best one yet.',
+    from: 'Mom & Dad', age: '10', grade: '4th', teacher: 'Mrs. Delgado',
+    deliveryDate: 'March 14', birthdate: 'March 14', column: 'sample value'
+  };
   function placeholder(f) {
-    var demo = { student: 'Avery Nakamura', message: 'Happy birthday! Hope your day is the best one yet.',
-                 from: 'Mrs. Delgado’s class', birthdate: 'March 14', age: '10', static: f.text };
-    var v = demo[f.source] || '';
-    if (f.source === 'static') { return f.upper ? String(v).toUpperCase() : String(v); }
-    v = f.prefix + v + f.suffix;
-    return f.upper ? v.toUpperCase() : v;
+    var v = f.source === 'static' ? f.text : (DEMO[f.source] || '');
+    if (f.source !== 'static') { v = f.prefix + v + f.suffix; }
+    return f.upper ? String(v).toUpperCase() : String(v);
   }
 
   /* ------------------------------------------------------------------ *
@@ -1176,9 +1331,16 @@
   }
 
   var SOURCE_LABEL = {
-    student: 'Student name', message: 'Message', from: 'From',
-    birthdate: 'Birthdate', age: 'Age', static: 'Fixed text'
+    student: 'Student name', studentFirst: 'First name', studentLast: 'Last name',
+    from: 'From', message: 'Message', age: 'Age', grade: 'Grade',
+    teacher: 'Teacher', deliveryDate: 'Delivery date', birthdate: 'Birthdate',
+    column: 'Any column', static: 'Fixed text'
   };
+  function labelOf(f) {
+    if (f.source === 'static') { return f.text || 'Fixed text'; }
+    if (f.source === 'column') { return f.column || 'Any column'; }
+    return SOURCE_LABEL[f.source] || f.source;
+  }
 
   function renderFieldList() {
     var host = $('flist');
@@ -1194,7 +1356,7 @@
 
       var nm = document.createElement('span');
       nm.className = 'nm';
-      nm.textContent = f.source === 'static' ? (f.text || 'Fixed text') : SOURCE_LABEL[f.source];
+      nm.textContent = labelOf(f);
 
       var eye = document.createElement('button');
       eye.type = 'button';
@@ -1214,7 +1376,7 @@
     });
   }
 
-  var PROPS = ['pText', 'pFont', 'pSize', 'pWeight', 'pColor', 'pAlign', 'pValign', 'pItalic',
+  var PROPS = ['pText', 'pColumn', 'pFont', 'pSize', 'pWeight', 'pColor', 'pAlign', 'pValign', 'pItalic',
                'pUpper', 'pLine', 'pShrink', 'pOutline', 'pOutlineColor', 'pOutlineWidth',
                'pShadow', 'pDateFmt', 'pAgeMode', 'pPrefix', 'pSuffix'];
 
@@ -1222,12 +1384,37 @@
     var f = fieldById(S.sel);
     $('propSec').hidden = !f;
     if (!f) { return; }
-    $('propTitle').textContent = f.source === 'static' ? 'Fixed text' : SOURCE_LABEL[f.source];
+    $('propTitle').textContent = labelOf(f);
     $('staticWrap').hidden = f.source !== 'static';
-    $('dateWrap').hidden = f.source !== 'birthdate';
+    $('columnWrap').hidden = f.source !== 'column';
+    $('dateWrap').hidden = f.source !== 'birthdate' && f.source !== 'deliveryDate';
     $('ageWrap').hidden = f.source !== 'age';
-    $('delField').hidden = f.source !== 'static';
+    $('delField').hidden = f.source !== 'static' && f.source !== 'column';
     $('outlineRow').hidden = !f.outline;
+
+    if (f.source === 'column') {
+      var cs = $('pColumn');
+      cs.textContent = '';
+      cs.appendChild(opt('', 'choose a column'));
+      S.columns.forEach(function (c) { cs.appendChild(opt(c, c)); });
+      cs.value = f.column || '';
+    }
+    if (f.source === 'age') {
+      /* The two ways an age can be known need different words, and offering
+         the wrong pair reads as a bug. */
+      var am = $('pAgeMode'), derived = !S.map.age && !!S.map.birthdate;
+      am.textContent = '';
+      if (derived) {
+        am.appendChild(opt('turning', 'the age they turn this birthday'));
+        am.appendChild(opt('now', 'their age on the delivery date'));
+        if (f.ageMode !== 'turning' && f.ageMode !== 'now') { f.ageMode = 'turning'; }
+      } else {
+        am.appendChild(opt('number', 'just the number they typed'));
+        am.appendChild(opt('raw', 'exactly as typed'));
+        if (f.ageMode !== 'number' && f.ageMode !== 'raw') { f.ageMode = 'number'; }
+      }
+      am.value = f.ageMode;
+    }
 
     $('pText').value = f.text;
     $('pFont').value = f.font;
@@ -1255,6 +1442,7 @@
     var f = fieldById(S.sel);
     if (!f) { return; }
     f.text = $('pText').value;
+    if (f.source === 'column') { f.column = $('pColumn').value; }
     f.font = $('pFont').value;
     var px = parseFloat($('pSize').value);
     if (px > 0) { f.size = px / (S.art ? S.art.h : 1000); }
@@ -1271,7 +1459,7 @@
     f.outlineWidth = parseFloat($('pOutlineWidth').value) || 6;
     f.shadow = $('pShadow').checked;
     f.dateFmt = $('pDateFmt').value;
-    f.ageMode = $('pAgeMode').value;
+    if ($('pAgeMode').value) { f.ageMode = $('pAgeMode').value; }
     f.prefix = $('pPrefix').value;
     f.suffix = $('pSuffix').value;
     $('pLineVal').textContent = Number(f.line).toFixed(2);
@@ -1287,7 +1475,13 @@
   });
   $('delField').addEventListener('click', function () { if (S.sel) { removeField(S.sel); } });
   $('addField').addEventListener('click', function () {
-    var f = mk('static', 'Fixed text', { y: .06, h: .07, size: .04, text: 'Happy Birthday!' });
+    var f = mk('static', { y: .06, h: .07, size: .04, text: 'Happy Birthday!' });
+    S.fields.push(f);
+    select(f.id);
+    render(); persist();
+  });
+  $('addColumn').addEventListener('click', function () {
+    var f = mk('column', { y: .06, h: .05, size: .028, color: '#5a6472' });
     S.fields.push(f);
     select(f.id);
     render(); persist();
@@ -1295,8 +1489,11 @@
 
   /* ---- mapping ---- */
   var ROLES = [
-    ['student', 'Student'], ['message', 'Message'], ['from', 'From'],
-    ['birthdate', 'Birthdate'], ['qty', 'Quantity']
+    ['studentFirst', 'First name'], ['studentLast', 'Last name'],
+    ['from', 'From'], ['message', 'Message'], ['age', 'Age'],
+    ['grade', 'Grade'], ['teacher', 'Teacher'],
+    ['deliveryDate', 'Delivery date'], ['birthdate', 'Birthdate'],
+    ['qty', 'Quantity']
   ];
 
   function renderMap() {
@@ -1340,23 +1537,31 @@
 
   function updateMapHint() {
     var recs = records();
-    var missing = [];
-    if (!S.map.student) { missing.push('student'); }
-    if (!S.map.message) { missing.push('message'); }
-    if (!S.map.from) { missing.push('from'); }
-    if (!S.map.birthdate) { missing.push('birthdate'); }
     var hint = $('mapHint');
+    var missing = [];
+    if (!S.map.studentFirst && !S.map.studentLast) { missing.push('a name'); }
+    if (!S.map.message) { missing.push('the message'); }
+    if (!S.map.from) { missing.push('who it is from'); }
+    if (!S.map.age && !S.map.birthdate) { missing.push('an age'); }
     if (missing.length) {
       hint.className = 'hint alert';
-      hint.textContent = 'Nothing chosen for: ' + missing.join(', ') + '. Those lines stay blank on the card.';
+      hint.textContent = 'Nothing chosen for ' + missing.join(', ') +
+        '. Those lines stay blank on every card.';
       return;
     }
-    var bad = 0;
-    recs.forEach(function (r) { if (!parseDate(r[S.map.birthdate])) { bad++; } });
-    hint.className = 'hint' + (bad ? ' alert' : '');
-    hint.textContent = bad
-      ? bad + ' of ' + recs.length + ' rows have a birthdate this page cannot read, so their age is left off.'
-      : 'All ' + recs.length + ' rows read cleanly.';
+    var noName = 0, noAge = 0;
+    recs.forEach(function (r) {
+      if (!nameOf(r)) { noName++; }
+      var a = S.map.age ? ageValue(col(r, 'age'), 'number') : ageFrom(col(r, 'birthdate'), 'turning');
+      if (!a) { noAge++; }
+    });
+    var notes = [];
+    if (noName) { notes.push(noName + ' with no student name'); }
+    if (noAge) { notes.push(noAge + ' whose age cannot be read, so that line is left off'); }
+    hint.className = 'hint' + (notes.length ? ' alert' : '');
+    hint.textContent = notes.length
+      ? recs.length + ' grams, ' + notes.join(' and ') + '.'
+      : 'All ' + recs.length + ' grams read cleanly.';
   }
 
   $('filterCol').addEventListener('change', function () {
@@ -1463,7 +1668,9 @@
       var fr = new FileReader();
       fr.onload = function () { resolve(fr.result); };
       fr.onerror = function () { reject(new Error('Could not read ' + file.name)); };
-      if (how === 'text') { fr.readAsText(file); } else { fr.readAsDataURL(file); }
+      if (how === 'text') { fr.readAsText(file); }
+      else if (how === 'buffer') { fr.readAsArrayBuffer(file); }
+      else { fr.readAsDataURL(file); }
     });
   }
 
@@ -1511,154 +1718,99 @@
     say(res.rows.length + ' rows read from ' + what + '.', 'good');
   }
 
-  wireDrop('csvDrop', 'csvFile', '.csv', function (file) {
-    if (/\.xlsx?$/i.test(file.name)) {
-      say('Excel files cannot be read here — open it and Save as CSV first.', 'warn');
+  function describeSource(name, extra) {
+    var drop = $('csvDrop');
+    drop.classList.add('has');
+    drop.textContent = '';
+    var strong = document.createElement('strong');
+    strong.textContent = name;
+    var meta = document.createElement('span');
+    meta.className = 'filename';
+    meta.textContent = extra + ' \u00b7 click to replace';
+    drop.appendChild(strong); drop.appendChild(meta);
+  }
+
+  /* Which sheet holds the grams is not a question of size: the workbook's
+     "All Purchases" tab is the longest and the least useful, because it mixes
+     every item together and hides the answers behind Question/Answer pairs.
+     The per-item sheet is the one whose headers are the checkout questions,
+     so the sheets are ranked by how many roles their headers actually fill. */
+  function scoreSheet(sheet) {
+    if (!sheet.rows.length) { return -1; }
+    var table = rowsFromTable(sheet.rows);
+    if (!table.rows.length) { return -1; }
+    var trial = {};
+    Object.keys(S.map).forEach(function (k) { trial[k] = ''; });
+    var filled = guessMap(trial, table.columns);
+    var core = ['studentFirst', 'message', 'from'].filter(function (r) { return trial[r]; }).length;
+    return filled + core * 3;
+  }
+
+  function useSheet(i) {
+    var sheet = S.sheets[i];
+    if (!sheet) { return; }
+    S.sheet = i;
+    var table = rowsFromTable(sheet.rows);
+    adoptTable(table, sheet.name);
+    describeSource(S.sourceName || sheet.name,
+      S.sheets.length > 1 ? S.sheets.length + ' sheets \u00b7 using "' + sheet.name + '"'
+                          : table.rows.length + ' rows');
+  }
+
+  function showSheetPicker() {
+    var wrap = $('sheetWrap'), pick = $('sheetPick');
+    wrap.hidden = S.sheets.length < 2;
+    pick.textContent = '';
+    S.sheets.forEach(function (sh, i) {
+      var rows = Math.max(0, sh.rows.length - 1);
+      pick.appendChild(opt(String(i), sh.name + '  (' + rows + ' rows)'));
+    });
+    pick.value = String(S.sheet);
+  }
+  $('sheetPick').addEventListener('change', function () {
+    S.map = { studentFirst: '', studentLast: '', from: '', message: '', age: '',
+              grade: '', teacher: '', deliveryDate: '', birthdate: '', qty: '' };
+    useSheet(parseInt(this.value, 10));
+  });
+
+  function loadWorkbook(file) {
+    say('Opening ' + file.name + '\u2026', 'busy');
+    return readAs(file, 'buffer').then(readWorkbook).then(function (sheets) {
+      if (!sheets.length) { throw new Error('That workbook has no sheets in it.'); }
+      S.sheets = sheets;
+      S.sourceName = file.name;
+      var best = 0, bestScore = -2;
+      sheets.forEach(function (sh, i) {
+        var sc = scoreSheet(sh);
+        if (sc > bestScore) { bestScore = sc; best = i; }
+      });
+      showSheetPicker();
+      useSheet(best);
+      $('sheetPick').value = String(best);
+    });
+  }
+
+  function loadDelimited(file) {
+    say('Reading ' + file.name + '\u2026', 'busy');
+    return readAs(file, 'text').then(function (text) {
+      S.sheets = [];
+      S.sourceName = file.name;
+      $('sheetWrap').hidden = true;
+      var table = rowsFromTable(parseDelimited(text, sniffDelimiter(text)));
+      adoptTable(table, file.name);
+      describeSource(file.name, table.rows.length + ' rows \u00b7 ' + table.columns.length + ' columns');
+    });
+  }
+
+  wireDrop('csvDrop', 'csvFile', '.xlsx,.csv', function (file) {
+    var isWorkbook = /\.xlsx$/i.test(file.name) ||
+      file.type === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+    if (/\.xls$/i.test(file.name)) {
+      say('That is the old .xls format. Open it and Save as .xlsx or CSV first.', 'warn');
       return;
     }
-    say('Reading ' + file.name + '…', 'busy');
-    readAs(file, 'text').then(function (text) {
-      var table = parseDelimited(text, sniffDelimiter(text));
-      adoptTable(rowsFromTable(table), file.name);
-      var drop = $('csvDrop');
-      drop.classList.add('has');
-      drop.textContent = '';
-      var strong = document.createElement('strong');
-      strong.textContent = file.name;
-      var meta = document.createElement('span');
-      meta.className = 'filename';
-      meta.textContent = S.rows.length + ' rows · ' + S.columns.length + ' columns · click to replace';
-      drop.appendChild(strong); drop.appendChild(meta);
-    }).catch(function (e) { say(e.message, 'warn'); });
-  });
-
-  /* ------------------------------------------------------------------ *
-   * the Cheddar Up panel
-   * ------------------------------------------------------------------ */
-  var apiFound = [], apiPicked = null;
-
-  function setSource(which) {
-    S.source = which;
-    $('paneCsv').hidden = which !== 'csv';
-    $('paneApi').hidden = which !== 'api';
-    $('tabCsv').setAttribute('aria-pressed', String(which === 'csv'));
-    $('tabApi').setAttribute('aria-pressed', String(which === 'api'));
-    $('tabCsv').classList.toggle('primary', which === 'csv');
-    $('tabApi').classList.toggle('primary', which === 'api');
-  }
-  $('tabCsv').addEventListener('click', function () { setSource('csv'); });
-  $('tabApi').addEventListener('click', function () { setSource('api'); });
-
-  function proxyUrl(params) {
-    var base = ($('apiBase').value || 'cheddar.php').trim();
-    var token = $('apiToken').value;
-    var q = [];
-    Object.keys(params).forEach(function (k) {
-      q.push(encodeURIComponent(k) + '=' + encodeURIComponent(params[k]));
-    });
-    if (token) { q.push('token=' + encodeURIComponent(token)); }
-    return base + (base.indexOf('?') < 0 ? '?' : '&') + q.join('&');
-  }
-
-  function askProxy(params) {
-    return fetch(proxyUrl(params), { credentials: 'same-origin' }).then(function (res) {
-      return res.text().then(function (body) {
-        var data = null;
-        try { data = JSON.parse(body); } catch (e) { /* left as null below */ }
-        if (data === null) {
-          throw new Error('The server sent back something that is not JSON. Is ' +
-            ($('apiBase').value || 'cheddar.php') + ' really there, and is PHP running?');
-        }
-        if (!res.ok) {
-          throw new Error(explain(data, res.status));
-        }
-        return data;
-      });
-    }, function () {
-      throw new Error('Could not reach ' + ($('apiBase').value || 'cheddar.php') +
-        '. Check that it sits in the same folder as this page.');
-    });
-  }
-
-  function explain(data, status) {
-    var e = data && data.error;
-    if (e === 'no_config') { return 'config.php is missing on the server. Copy config.sample.php to config.php.'; }
-    if (e === 'no_key') { return 'config.php has no API key in it yet.'; }
-    if (e === 'bad_token') { return 'That access password does not match the one in config.php.'; }
-    if (e === 'no_curl') { return 'The server has no PHP cURL extension, so it cannot call Cheddar Up.'; }
-    if (e === 'upstream_unreachable') { return 'The server could not reach Cheddar Up: ' + (data.detail || ''); }
-    if (e === 'not_json') {
-      return 'Cheddar Up answered with ' + data.upstream_status + ' and a ' + (data.content_type || 'non-JSON') +
-             ' page rather than data. That usually means the endpoint path is wrong.';
-    }
-    if (status === 401 || status === 403) {
-      return 'Cheddar Up refused the key (' + status + '). Try a different auth_style in config.php — ' +
-             'bearer, token, x-api-key, basic or query.';
-    }
-    if (status === 404) { return 'Cheddar Up has nothing at that path (404).'; }
-    return 'Cheddar Up answered ' + status + (data && data.message ? ': ' + data.message : '.');
-  }
-
-  $('apiProbe').addEventListener('click', function () {
-    say('Checking the proxy…', 'busy');
-    askProxy({ probe: 1 }).then(function (d) {
-      var notes = [];
-      if (!d.curl) { notes.push('no PHP cURL extension'); }
-      if (!d.key_set) { notes.push('no API key in config.php'); }
-      if (!d.token_required) { notes.push('no access password set — anyone who finds this URL can use it'); }
-      showPeek(d);
-      if (notes.length) { say('Proxy reachable, but: ' + notes.join('; '), 'warn'); }
-      else { say('Proxy is set up: PHP ' + d.php + ', key ending ' + d.key_tail + ', ' + d.auth_style + ' auth.', 'good'); }
-    }).catch(function (e) { say(e.message, 'warn'); });
-  });
-
-  function showPeek(data) {
-    var peek = $('apiPeek');
-    var text = JSON.stringify(data, null, 1);
-    peek.hidden = false;
-    peek.textContent = text.length > 20000 ? text.slice(0, 20000) + '\n…' : text;
-  }
-
-  $('apiGo').addEventListener('click', function () {
-    var path = ($('apiPath').value || '/').trim();
-    say('Asking Cheddar Up for ' + path + '…', 'busy');
-    $('apiUse').disabled = true;
-    askProxy({ path: path }).then(function (data) {
-      showPeek(data);
-      apiFound = findArrays(data, '');
-      apiPicked = null;
-      var crumbs = $('apiCrumbs');
-      crumbs.textContent = '';
-      if (!apiFound.length) {
-        say('That answered, but there is no list of records in it. Follow an id into a deeper path.', 'warn');
-        return;
-      }
-      apiFound.sort(function (a, b) {
-        return (a.depth - b.depth) || (b.arr.length - a.arr.length);
-      });
-      apiFound.slice(0, 8).forEach(function (cand, i) {
-        var b = document.createElement('button');
-        b.type = 'button';
-        b.textContent = cand.path + ' · ' + cand.arr.length;
-        b.addEventListener('click', function () {
-          apiPicked = cand;
-          $('apiUse').disabled = false;
-          Array.prototype.forEach.call(crumbs.children, function (c) { c.style.borderColor = ''; });
-          b.style.borderColor = '#d8214b';
-          showPeek(cand.arr.slice(0, 2));
-          say('Picked ' + cand.path + ' (' + cand.arr.length + ' records). Now press "Use these rows".');
-        });
-        crumbs.appendChild(b);
-        if (i === 0) { apiPicked = cand; $('apiUse').disabled = false; b.style.borderColor = '#d8214b'; }
-      });
-      say(apiFound.length + ' list' + (apiFound.length > 1 ? 's' : '') + ' found. Using ' +
-          apiFound[0].path + ', with ' + apiFound[0].arr.length + ' records.', 'good');
-    }).catch(function (e) { say(e.message, 'warn'); });
-  });
-
-  $('apiUse').addEventListener('click', function () {
-    if (!apiPicked) { return; }
-    adoptTable(rowsFromRecords(apiPicked.arr), 'Cheddar Up (' + apiPicked.path + ')');
+    (isWorkbook ? loadWorkbook(file) : loadDelimited(file))
+      .catch(function (e) { say(e.message || 'That file could not be read.', 'warn'); });
   });
 
   /* ------------------------------------------------------------------ *
@@ -1875,9 +2027,8 @@
     var save = {
       v: 1,
       fields: S.fields, map: S.map, filter: S.filter, refDate: S.refDate,
-      source: S.source, guides: S.guides,
+      guides: S.guides,
       outName: $('outName').value, asZip: $('asZip').checked,
-      apiBase: $('apiBase').value, apiPath: $('apiPath').value,
       artName: S.art ? S.art.name : ''
     };
     /* The artwork rides along when it is small enough to be worth it, so a
@@ -1904,7 +2055,7 @@
     if (Array.isArray(saved.fields) && saved.fields.length) {
       /* Fill in anything a newer version of this page added, so an old
          saved layout does not arrive with holes in it. */
-      var template = mk('static', '', {});
+      var template = mk('static', {});
       S.fields = saved.fields.map(function (f) {
         var merged = {};
         Object.keys(template).forEach(function (k) { merged[k] = template[k]; });
@@ -1913,21 +2064,24 @@
         return merged;
       });
     }
-    if (saved.map) { S.map = saved.map; }
+    if (saved.map) {
+      /* An older layout knew a single "student" column and no age column;
+         keep what still applies rather than discarding the whole mapping. */
+      Object.keys(S.map).forEach(function (k) {
+        if (saved.map[k]) { S.map[k] = saved.map[k]; }
+      });
+      if (!S.map.studentFirst && saved.map.student) { S.map.studentFirst = saved.map.student; }
+    }
     if (saved.filter) { S.filter = saved.filter; }
     if (saved.refDate) { S.refDate = saved.refDate; }
     if (saved.guides != null) { S.guides = !!saved.guides; }
     if (saved.outName) { $('outName').value = saved.outName; }
     if (saved.asZip != null) { $('asZip').checked = !!saved.asZip; }
-    if (saved.apiBase) { $('apiBase').value = saved.apiBase; }
-    if (saved.apiPath) { $('apiPath').value = saved.apiPath; }
     return saved.art ? { src: saved.art, name: saved.artName } : null;
   }
 
   $('outName').addEventListener('change', persist);
   $('asZip').addEventListener('change', persist);
-  $('apiBase').addEventListener('change', persist);
-  $('apiPath').addEventListener('change', persist);
 
   /* ---- the layout as a file ---- */
   $('tplSave').addEventListener('click', function () {
@@ -1969,7 +2123,6 @@
   S.sel = S.fields[0].id;
   $('refDate').value = S.refDate;
   $('guides').checked = S.guides;
-  setSource(S.source === 'api' ? 'api' : 'csv');
   renderFieldList();
   syncProps();
   refresh();
