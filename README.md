@@ -8,6 +8,18 @@ arrangement you set once is used for all of them.
 network: **double-click it and it runs.** Upload it to a web host if you want
 other people to reach it, but nothing about it requires one.
 
+## Defaults
+
+The page opens on the arrangement the grams are printed from — name and age
+across the middle with the birthday beside it, the message below, and the
+teacher and grade small and pale along the bottom edge — and on the column
+mapping this collection's form produces. Both came from a saved layout rather
+than being invented, so a fresh browser is ready to print without being set up
+first.
+
+*Start the layout over* returns to exactly that. *Load layout* still takes a
+file, for a different card or a different year.
+
 ## Using it
 
 1. Open `index.html`.

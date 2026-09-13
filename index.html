@@ -541,8 +541,21 @@
   var S = {
     art: null,
     rows: [], columns: [],
-    map: { studentFirst: '', studentLast: '', from: '', message: '', age: '',
-           grade: '', teacher: '', birthdate: '', qty: '' },
+    /* Seeded with the headers this collection's form produces. Guessing finds
+       them anyway; this only matters if the wording drifts enough to beat the
+       patterns. A column named here that a loaded file does not have is
+       dropped and re-guessed, so it cannot mislead. */
+    map: {
+      studentFirst: "Student's First Name",
+      studentLast: "Student's Last Name",
+      from: 'Please indicate who this gram is from (your name, Mom & Dad, etc.)',
+      message: 'Message for student (will be added to certificate)',
+      age: "Student's Age",
+      grade: 'Grade of Student',
+      teacher: "Teacher's Name",
+      birthdate: 'Delivery Date',
+      qty: 'Qty Sold'
+    },
     filter: { col: '', val: '' },
     fields: [], sel: null, idx: 0, skip: {},
     refDate: todayISO(), zoom: 'fit', guides: true, sheets: [], sheet: 0,
@@ -555,17 +568,45 @@
   }
   function pad2(n) { return (n < 10 ? '0' : '') + n; }
 
+  /* The arrangement the grams are actually printed from, taken from a saved
+     layout rather than invented: name and age across the middle with the
+     birthday beside it, the message below, and the teacher and grade small
+     and pale along the bottom edge. Every number is a fraction of the
+     artwork, so it lands the same on a proof and on the print file. */
   function defaultFields() {
     return [
-      mk('student',   { y: .40, h: .13, size: .090, weight: '700', font: "'Fredoka', system-ui, sans-serif" }),
-      mk('age',       { y: .53, h: .07, size: .048, weight: '600', prefix: 'Turning ', suffix: '!' }),
-      mk('message',   { y: .67, h: .16, size: .034, italic: true }),
-      mk('from',      { y: .85, h: .06, size: .034, weight: '600', prefix: '\u2014 ' }),
-      /* Present but off: which of these belongs on a card depends on whether
-         it is handed to the child or sorted by whoever walks the halls. */
-      mk('birthdate', { y: .605, h: .05, size: .030, color: '#5a6472' }),
-      mk('grade',     { y: .93, h: .04, size: .022, color: '#5a6472', visible: false }),
-      mk('teacher',   { y: .05, h: .04, size: .022, color: '#5a6472', visible: false })
+      mk('student', {
+        x: .58693, y: .48915, w: .33184, h: .07655, size: .08976,
+        font: "'Fredoka', system-ui, sans-serif", weight: '700',
+        align: 'center', valign: 'bottom'
+      }),
+      mk('age', {
+        x: .22101, y: .56786, w: .28986, h: .06969, size: .04805,
+        weight: '600', align: 'left', valign: 'bottom',
+        prefix: 'Turning ', suffix: '!'
+      }),
+      mk('birthdate', {
+        x: .64794, y: .57140, w: .23805, h: .05658, size: .02992,
+        color: '#5a6472', align: 'center', valign: 'bottom',
+        dateFmt: 'numericYear'
+      }),
+      mk('message', {
+        x: .39240, y: .69549, w: .42741, h: .12631, size: .03445,
+        italic: true, align: 'center', valign: 'middle',
+        outlineColor: '#7c2a00', outlineWidth: 2
+      }),
+      mk('from', {
+        x: .38612, y: .82364, w: .43464, h: .05687, size: .034,
+        weight: '600', align: 'center', valign: 'middle', prefix: '\u2014 '
+      }),
+      mk('teacher', {
+        x: .32756, y: .95190, w: .18033, h: .03684, size: .02176,
+        color: '#ebebeb', align: 'left', valign: 'bottom'
+      }),
+      mk('grade', {
+        x: .55182, y: .96220, w: .12271, h: .02808, size: .02176,
+        color: '#ebebeb', align: 'right', valign: 'middle'
+      })
     ];
   }
 

@@ -2,7 +2,11 @@
 
 Enough to exercise the page before any real orders exist.
 
-- `card.png` — a blank 900×1260 gradient, the proportions of a 5×7 card.
+- `card.png` — a blank 900×1260 gradient, the proportions of a 5×7 card, with
+  a dark band along the bottom. The band is there because the default layout
+  puts the teacher and grade in near-white along that edge, as the real
+  artwork does; on a card that is pale all the way down they would be
+  invisible and the sample would not show what the defaults actually do.
 - `orders.xlsx` — a workbook shaped like a real Cheddar Up fundraiser export:
   four sheets, including a long `All Purchases` tab that mixes items behind
   generic `Question 1` / `Answer 1` columns. The page should ignore that one
